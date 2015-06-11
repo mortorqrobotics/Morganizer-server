@@ -101,7 +101,7 @@ addAction("getevents", "POST", function(req, res, get, post){
 			res.end(JSON.stringify(events));
 		});
 	});
-}
+});
 
 function validateUser(user, token, cb){
 	//Fix
