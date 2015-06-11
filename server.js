@@ -71,7 +71,7 @@ addAction("loginuser", "POST", function(req, res, get, post){
 	 				res.end("failed login");
 	 			}
 	 		});
-	 	});;
+	 	});
 });
 addAction("addevent", "POST", function(req, res, get, post){
 
@@ -112,7 +112,7 @@ function validateUser(user, token, cb){
 		else {
 			cb(false);
 		}
-	}
+	});
 }
 
 function randomStr(){
