@@ -109,7 +109,7 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  	});
 });
 
-addAction("addEvent", "GET", function(req, res, get) {
+addAction("addEvent", "POST", function(req, res, get) {
 	var user = get.user;
 	verifySession(user, get.token, function(valid) {
 		if(valid) {
@@ -129,8 +129,8 @@ addAction("getEvents", "GET", function(req, res, get) {
 	var user = get.user;
 	verifySession(user, get.token, function(valid) {
 		if(valid) {
-			db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month INTEGER, day INTEGER, year INTEGER, time TEXT, event TEXT)");
 			db.serialize(function() {
+				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month INTEGER, day INTEGER, year INTEGER, time TEXT, event TEXT)");
 				db.all("SELECT * FROM " + user + "_Calendar", function(err, events) {
 					res.end(JSON.stringify(events));
 				});
@@ -142,13 +142,26 @@ addAction("getEvents", "GET", function(req, res, get) {
 	});
 });
 
+addAction("searchUsers", "GET", function(req, res, get) {
+	var searchItem = get.item;
+	var results = [];
+	db.serialize(function() {
+ 		db.each("SELECT first, last FROM Users", function(err, user) {
+  			var name = user.first + " " + user.last;
+  			if(~name.toLowerCase().indexOf(searchItem.toLowerCase())) {
+  	 			result.push(name);
+  			}
+ 		}, function() {
+  				res.end(JSON.stringify(results));
+		});
+	});
+}
+
 function validateSession(user, token, cb){
 	db.all("SELECT * FROM Sessions WHERE user = '" + user + "' AND token = '" + token + "'", function(err, results) {
 		cb(typeof(results) != "undefined" && results.length > 0);
 	});
 }
-
-
 
 function randomStr() {
 	var str = "";
