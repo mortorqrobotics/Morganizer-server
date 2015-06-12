@@ -15,6 +15,7 @@ function parseJSON(str) {
 
 var server = http.createServer(function(req, res) {
 	var path = url.parse(req.url).pathname;
+	console.log(path);
 	var get = qs.parse(url.parse(req.url).querystring);
 	var any = false;
 	for(var i = 0; i < actions.length; i++) {
@@ -93,23 +94,24 @@ addAction("createUser", "POST", function(req, res, get, post) {
 	
 	db.serialize(function() {
 		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, subdivision TEXT, phone TEXT)");
-		db.run("INSERT INTO Users VALUES (" + [user, pass, email, firstName, lastName, subdivision, phone].join(",") + ")");
+		db.run("INSERT INTO Users VALUES ('" + [user, pass, email, firstName, lastName, subdivision, phone].join("','") + "')");
 		
 		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
-		db.run("INSERT INTO Sessions VALUES (" + [user, token].join(",") + ")");
+		db.run("INSERT INTO Sessions VALUES ('" + [user, token].join("','") + "')");
 	});
 	res.end(JSON.stringify({"user":user,"token":token}));
 });
 
 addAction("loginUser", "POST", function(req, res, get, post) {
- 	var user = get.user;
- 	var pass = parseJSON(post);
+ 	var data = parseJSON(post);
+ 	var pass = data.pass;
+ 	var user = data.user;
  	db.serialize(function() {
  		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
  		db.all("SELECT * FROM Users WHERE user = '" + user + "' AND pass = '" + pass + "'", function(err, results) {
  			if (typeof(results) != "undefined" && results.length > 0){
  				var token = randomStr();
- 				db.run("INSERT INTO Sessions VALUES (" + [user, token].join(",") + ")");
+ 				db.run("INSERT INTO Sessions VALUES ('" + [user, token].join("','") + "')");
 				res.end(JSON.stringify({"user" : user, "token" : token}));
  			}
  			else {
@@ -125,7 +127,7 @@ addAction("addEvent", "POST", function(req, res, get) {
 		if(valid) {
 			db.serialize(function() {
 				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month TEXT, day TEXT, year TEXT, time TEXT, event TEXT)");
-				db.run("INSERT INTO " + user + "_Calendar VALUES (" + [data.month, data.day, data.year, data.time, data.event].join(",") + ")");
+				db.run("INSERT INTO " + user + "_Calendar VALUES ('" + [data.month, data.day, data.year, data.time, data.event].join("','") + "')");
 			});
 			res.end("success");
 		}
