@@ -15,7 +15,6 @@ function parseJSON(str) {
 
 var server = http.createServer(function(req, res) {
 	var path = url.parse(req.url).pathname;
-	console.log(path);
 	var get = qs.parse(url.parse(req.url).querystring);
 	var any = false;
 	for(var i = 0; i < actions.length; i++) {
@@ -121,13 +120,15 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  	});
 });
 
-addAction("addEvent", "POST", function(req, res, get) {
+addAction("addEvent", "POST", function(req, res, get, post) {
 	var user = get.user;
-	verifySession(user, get.token, function(valid) {
+	var data = parseJSON(post);
+	validateSession(user, get.token, function(valid) {
 		if(valid) {
 			db.serialize(function() {
-				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month TEXT, day TEXT, year TEXT, time TEXT, event TEXT)");
-				db.run("INSERT INTO " + user + "_Calendar VALUES ('" + [data.month, data.day, data.year, data.time, data.event].join("','") + "')");
+				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month INTEGER, day INTEGER, year INTEGER, time TEXT, event TEXT)");
+				var insert = getInsertSql(user + "_Calendar", [data.month, data.day, data.year, data.time, data.event]);
+				db.run(insert);
 			});
 			res.end("success");
 		}
@@ -139,7 +140,7 @@ addAction("addEvent", "POST", function(req, res, get) {
 
 addAction("getEvents", "GET", function(req, res, get) {
 	var user = get.user;
-	verifySession(user, get.token, function(valid) {
+	validateSession(user, get.token, function(valid) {
 		if(valid) {
 			db.serialize(function() {
 				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month INTEGER, day INTEGER, year INTEGER, time TEXT, event TEXT)");
@@ -182,6 +183,41 @@ function randomStr() {
 		str += String.fromCharCode(rand + ((rand < 26) ? 97 : ((rand < 52) ? 39 : -4)));
 	}
 	return str;
+}
+
+function getInsertSql(table, arr) {
+	if(!isValidInput(table)) {
+		return null;
+	}
+	var strs = []
+	for(var i = 0; i < arr.length; i++) {
+		if(typeof(arr[i]) == "string") {
+			strs.push("\"" + arr[i] + "\"");
+		}
+		else {
+			strs.push(String(arr[i]));
+		}
+		if(!isValid(arr[i])) {
+			return null;
+		}
+	}
+	return "INSERT INTO " + table + " VALUES (" + strs.join(",") + ")";
+}
+
+function isValidInput(str) {
+	for(var i = 0; i < str.length; i++) {
+		var char = str.charAt(i);
+		switch(true) {
+			 case "0" <= char && char <= "9":
+			 case "a" <= char && char <= "z":
+			 case "A" <= char && char <= "Z":
+			 case char == "_":
+			 	break;
+			 default:
+			 	return false;
+		}
+	}
+	return true;
 }
 
 /*
