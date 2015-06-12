@@ -154,7 +154,7 @@ addAction("getEvents", "GET", function(req, res, get) {
 		}
 	});
 });
-
+//Consider post data for token and search item (spaces)
 addAction("searchUsers", "GET", function(req, res, get) {
 	var searchItem = get.item;
 	var results = [];
@@ -167,6 +167,28 @@ addAction("searchUsers", "GET", function(req, res, get) {
  		}, function() {
   				res.end(JSON.stringify(results));
 		});
+	});
+});
+
+addAction("searchEvents", "GET", function(req, res, get) {
+	var searchItem = get.item;
+	var user = get.user;
+	var results = [];
+	validateSession(user, get.token, function(valid) {
+		if(valid) {
+			db.serialize(function() {
+				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month INTEGER, day INTEGER, year INTEGER, time TEXT, event TEXT)");
+ 				db.all("SELECT * FROM "+ user + "_Calendar WHERE event LIKE '%" + searchItem + "%'", function(err, events) {
+  					if (typeof(events) != "undefined"&&events.length > 0){
+  						results = events;
+  					}
+  					res.end(JSON.stringify(results));
+				});
+			});
+		}
+		else {
+			res.end("invalid session");
+		}
 	});
 });
 
