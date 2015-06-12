@@ -80,20 +80,30 @@ function addAction(path, method, cb) {
 	});
 }
 
-addAction("createUser", "GET", function(req, res, get, post) {
-	var user = get.user;
-	var pass = post;
-	var email = get.email;
+addAction("createUser", "POST", function(req, res, get, post) {
+	var data = parseJSON(post);
+	var user = data.user;
+	var pass = data.pass;
+	var email = data.email;
+	var subdivision = data.subdivision;
+	var phone = data.phone;
+	var firstName = data.firstName;
+	var lastName = data.lastName;
+	var token = randomStr();
+	
 	db.serialize(function() {
-		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT)");
-		db.run("INSERT INTO Users VALUES ('" + user + "', '" + pass + "', '" + email + "')");
+		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, subdivision TEXT, phone TEXT)");
+		db.run("INSERT INTO Users VALUES (" + [user, pass, email, firstName, lastName, subdivision, phone].join(",") + ")");
+		
+		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
+		db.run("INSERT INTO Sessions VALUES (" + [user, token].join(",") + ")");
 	});
-	res.end("success");
+	res.end(JSON.stringify({"user":user,"token":token}));
 });
 
 addAction("loginUser", "POST", function(req, res, get, post) {
  	var user = get.user;
- 	var pass = post;
+ 	var pass = parseJSON(post);
  	db.serialize(function() {
  		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
  		db.all("SELECT * FROM Users WHERE user = '" + user + "' AND pass = '" + pass + "'", function(err, results) {
