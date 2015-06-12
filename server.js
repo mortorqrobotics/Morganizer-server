@@ -159,13 +159,13 @@ addAction("searchUsers", "GET", function(req, res, get) {
  		db.each("SELECT first, last FROM Users", function(err, user) {
   			var name = user.first + " " + user.last;
   			if(~name.toLowerCase().indexOf(searchItem.toLowerCase())) {
-  	 			result.push(name);
+  	 			results.push(name);
   			}
  		}, function() {
   				res.end(JSON.stringify(results));
 		});
 	});
-}
+});
 
 function validateSession(user, token, cb){
 	db.all("SELECT * FROM Sessions WHERE user = '" + user + "' AND token = '" + token + "'", function(err, results) {
