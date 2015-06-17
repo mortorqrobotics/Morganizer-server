@@ -68,7 +68,7 @@ var server = http.createServer(function(req, res) {
 	}
 });
 
-var port = process.argv[2] || 8080;
+var port = process.argv[2] || 80;
 server.listen(port);
 
 var actions = [];
@@ -96,9 +96,6 @@ addAction("createUser", "POST", function(req, res, get, post) {
 	db.serialize(function() {
 		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, subdivision TEXT, phone TEXT)");
 		db.run("INSERT INTO Users VALUES ('" + [user, pass, email, firstName, lastName, subdivision, phone].join("','") + "')");
-		
-		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
-		db.run("INSERT INTO Sessions VALUES ('" + [user, token].join("','") + "')");
 	});
 	res.end(JSON.stringify({"user":user,"token":token,"email":email,"subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
 });
@@ -112,16 +109,17 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  	console.log("Ran3");
  	db.serialize(function() {
  		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
- 		db.all("SELECT * FROM Users WHERE user = '" + user + "' AND pass = '" + pass + "'", function(err, results) {
+ 		db.all("SELECT * FROM Users WHERE (user = '" + user + "' OR email = '" + user + "') AND pass = '" + pass + "'", function(err, results) {
  			if (typeof(results) != "undefined" && results.length > 0){
  				var token = randomStr();
  				var email = results[0].email;
+ 				var username = results[0].user;
  				var subdivision = results[0].subdivision;
  				var phone = results[0].phone;
  				var firstName = results[0].first;
  				var lastName = results[0].last;
  				db.run("INSERT INTO Sessions VALUES ('" + [user, token].join("','") + "')");
-				res.end(JSON.stringify({"user":user,"token":token,"email":email,"subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
+				res.end(JSON.stringify({"user":username,"token":token,"email":email,"subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
  			}
  			else {
  				res.end("invalid login");
