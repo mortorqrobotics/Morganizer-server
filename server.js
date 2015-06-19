@@ -154,8 +154,10 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  				var phone = results[0].phone;
  				var firstName = results[0].first;
  				var lastName = results[0].last;
+ 				var name = results[0].teamName;
+ 				var number = results[0].teamNumber;
  				db.run("INSERT INTO Sessions VALUES ('" + [user, token].join("','") + "')");
-				res.end(JSON.stringify({"user":username,"token":token,"email":email,"subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
+				res.end(JSON.stringify({"user":user,"token":token,"email":email,"teamName":name, "teamNumber":number, "subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
  			}
  			else {
  				res.end("invalid login");
