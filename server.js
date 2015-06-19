@@ -4,7 +4,7 @@ var url = require("url");
 var qs = require("querystring");
 //var io = require("socket.io");
 var sqlite = require("sqlite3");
-var db = new sqlite.Database("data4.db");
+var db = new sqlite.Database("data.db");
 
 function parseJSON(str) {
 	try {
@@ -102,9 +102,7 @@ addAction("createUser", "POST", function(req, res, get, post) {
 			if (typeof(results) != "undefined"&&results.length == 1){
 				var number = results[0].number;
 				var name = results[0].name;
-				
 				db.run("INSERT INTO Users VALUES ('" + [user, pass, email, firstName, lastName, name, number, subdivision, phone].join("','") + "')");
-				
 				res.end(JSON.stringify({"user":user,"token":token,"email":email,"teamName":name, "teamNumber":number, "subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
 			}
 			else {
