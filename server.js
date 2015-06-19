@@ -4,7 +4,7 @@ var url = require("url");
 var qs = require("querystring");
 //var io = require("socket.io");
 var sqlite = require("sqlite3");
-var db = new sqlite.Database("data.db");
+var db = new sqlite.Database("data4.db");
 
 function parseJSON(str) {
 	try {
@@ -89,17 +89,54 @@ addAction("createUser", "POST", function(req, res, get, post) {
 	var phone = data.phone;
 	var firstName = data.firstName;
 	var lastName = data.lastName;
+	var teamCode = data.teamCode;
 	var token = randomStr();
 	console.log("Ran2");
 	console.log(user);
 	console.log(pass);
+	console.log("hi");
 	db.serialize(function() {
-		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, subdivision TEXT, phone TEXT)");
-		db.run("INSERT INTO Users VALUES ('" + [user, pass, email, firstName, lastName, subdivision, phone].join("','") + "')");
+		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, subdivision TEXT, phone TEXT)");
+		db.run("CREATE TABLE IF NOT EXISTS Teams (number TEXT, name TEXT, code TEXT)");//number is text for a reason, don't change
+		db.all("SELECT * FROM Teams WHERE code = '" + teamCode + "'", function(err, results) {
+			if (typeof(results) != "undefined"&&results.length == 1){
+				var number = results[0].number;
+				var name = results[0].name;
+				
+				db.run("INSERT INTO Users VALUES ('" + [user, pass, email, firstName, lastName, name, number, subdivision, phone].join("','") + "')");
+				
+				res.end(JSON.stringify({"user":user,"token":token,"email":email,"teamName":name, "teamNumber":number, "subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
+			}
+			else {
+				res.end("no team");
+				console.log("no team");
+			}
+		});
 	});
-	res.end(JSON.stringify({"user":user,"token":token,"email":email,"subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
+	
 });
+addAction("createTeam", "POST", function(req, res, get, post) {
 
+	var data = parseJSON(post);	
+	var user = data.user;
+	var teamName = data.teamName;
+	var teamNumber = data.teamNumber;
+	var chosenCode = data.chosenCode;
+	
+	db.serialize(function() {
+		db.run("CREATE TABLE IF NOT EXISTS Teams (number TEXT, name TEXT, code TEXT)");//number is text for a reason, don't change
+		db.all("SELECT code FROM Teams WHERE code = '" + chosenCode + "'", function(err, results) {
+			if (typeof(results) != "undefined"&&results.length > 0){
+				res.end("team exists");
+			}
+			else {
+				db.run("INSERT INTO Teams VALUES ('" +[teamNumber, teamName, chosenCode].join("','")+ "')");
+				res.end("added team"); 
+			}
+		});
+	});
+			
+});
 addAction("loginUser", "POST", function(req, res, get, post) {
  	var data = parseJSON(post);
  	var pass = data.pass;
@@ -109,6 +146,7 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  	console.log("Ran3");
  	db.serialize(function() {
  		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
+ 		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, subdivision TEXT, phone TEXT)");
  		db.all("SELECT * FROM Users WHERE (user = '" + user + "' OR email = '" + user + "') AND pass = '" + pass + "'", function(err, results) {
  			if (typeof(results) != "undefined" && results.length > 0){
  				var token = randomStr();
