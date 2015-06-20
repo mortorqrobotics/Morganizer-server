@@ -166,6 +166,48 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  	});
 });
 
+addAction("announce", "POST", function(req, res, get, post) {
+	console.log("post");
+	var data = JSON.parse(post);
+	var user = data.user;
+	var nameDate = data.nameDate;
+	var text = data.text;
+	var teamCode = "";
+	db.serialize(function() {
+		db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, results){
+			console.log(results);
+			if (typeof(results) != "undefined"&&results.length > 0){
+				teamCode = results[0].teamCode;
+				db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT)");
+				db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode].join("','")+ "')");
+				res.end("success");
+			}
+			else {
+				res.end("fail");
+			}
+		});
+	});
+});
+
+addAction("getannouncements", "POST", function(req, res, get, post) {
+	var data = JSON.parse(post);
+	var user = data.user;
+	var teamCode = "";
+	db.serialize(function() {
+		db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT)");
+		db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, results){
+			if (typeof(results) != "undefined"&&results.length > 0){
+				teamCode = results[0].teamCode;
+				db.all("SELECT * FROM Announcements WHERE teamCode = '" + teamCode + "'", function(err, results){
+					res.end(JSON.stringify(results));
+				});
+			}
+			else {
+				res.end("fail");
+			}
+		});
+	});
+});
 addAction("addEvent", "POST", function(req, res, get, post) {
 	var user = get.user;
 	var data = parseJSON(post);
