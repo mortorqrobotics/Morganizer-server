@@ -90,19 +90,20 @@ addAction("createUser", "POST", function(req, res, get, post) {
 	var firstName = data.firstName;
 	var lastName = data.lastName;
 	var teamCode = data.teamCode;
+	console.log(teamCode + " is the code");
 	var token = randomStr();
 	console.log("Ran2");
 	console.log(user);
 	console.log(pass);
 	console.log("hi");
 	db.serialize(function() {
-		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, subdivision TEXT, phone TEXT)");
+		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, teamCode TEXT, subdivision TEXT, phone TEXT)");
 		db.run("CREATE TABLE IF NOT EXISTS Teams (number TEXT, name TEXT, code TEXT)");//number is text for a reason, don't change
 		db.all("SELECT * FROM Teams WHERE code = '" + teamCode + "'", function(err, results) {
 			if (typeof(results) != "undefined"&&results.length == 1){
 				var number = results[0].number;
 				var name = results[0].name;
-				db.run("INSERT INTO Users VALUES ('" + [user, pass, email, firstName, lastName, name, number, subdivision, phone].join("','") + "')");
+				db.run("INSERT INTO Users VALUES ('" + [user, pass, email, firstName, lastName, name, number, teamCode, subdivision, phone].join("','") + "')");
 				res.end(JSON.stringify({"user":user,"token":token,"email":email,"teamName":name, "teamNumber":number, "subdivision":subdivision,"phone":phone,"first":firstName,"last":lastName}));
 			}
 			else {
@@ -144,7 +145,7 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  	console.log("Ran3");
  	db.serialize(function() {
  		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
- 		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, subdivision TEXT, phone TEXT)");
+		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, teamCode TEXT, subdivision TEXT, phone TEXT)");
  		db.all("SELECT * FROM Users WHERE (user = '" + user + "' OR email = '" + user + "') AND pass = '" + pass + "'", function(err, results) {
  			if (typeof(results) != "undefined" && results.length > 0){
  				var token = randomStr();
@@ -164,6 +165,24 @@ addAction("loginUser", "POST", function(req, res, get, post) {
  			}
  		});
  	});
+});
+
+addAction("addEvent", "POST", function(req, res, get, post) {
+	var user = get.user;
+	var data = parseJSON(post);
+	validateSession(user, get.token, function(valid) {
+		if(valid) {
+			db.serialize(function() {
+				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month INTEGER, day INTEGER, year INTEGER, time TEXT, event TEXT)");
+				var insert = getInsertSql(user + "_Calendar", [data.month, data.day, data.year, data.time, data.event]);
+				db.run(insert);
+			});
+			res.end("success");
+		}
+		else {
+			res.end("invalid session");
+		}
+	});
 });
 
 addAction("announce", "POST", function(req, res, get, post) {
@@ -206,23 +225,6 @@ addAction("getannouncements", "POST", function(req, res, get, post) {
 				res.end("fail");
 			}
 		});
-	});
-});
-addAction("addEvent", "POST", function(req, res, get, post) {
-	var user = get.user;
-	var data = parseJSON(post);
-	validateSession(user, get.token, function(valid) {
-		if(valid) {
-			db.serialize(function() {
-				db.run("CREATE TABLE IF NOT EXISTS " + user + "_Calendar (month INTEGER, day INTEGER, year INTEGER, time TEXT, event TEXT)");
-				var insert = getInsertSql(user + "_Calendar", [data.month, data.day, data.year, data.time, data.event]);
-				db.run(insert);
-			});
-			res.end("success");
-		}
-		else {
-			res.end("invalid session");
-		}
 	});
 });
 
