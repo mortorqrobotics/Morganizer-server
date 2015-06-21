@@ -79,7 +79,30 @@ function addAction(path, method, cb) {
 		cb: cb
 	});
 }
-
+addAction("getteammates", "POST", function(req, res, get, post) {
+	var data = parseJSON(post);
+	var user = data.user;
+	var teamCode = "";
+	db.serialize(function() {
+		db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, result){
+			if (typeof(result) != "undefined"&&result.length > 0){
+				teamCode = result[0].teamCode;
+				db.all("SELECT first, last FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results){
+					console.log(results);
+					if (typeof(results) != "undefined"&&results.length > 0){
+						res.end(JSON.stringify(results));
+					}
+					else {
+						res.end("fail");
+					}
+				});
+			}
+			else {
+				res.end("fail");
+			}
+		});
+	});
+});
 addAction("createUser", "POST", function(req, res, get, post) {
 	var data = parseJSON(post);
 	var user = data.user;
