@@ -216,22 +216,20 @@ addAction("announce", "POST", function(req, res, get, post) {
 	var text = data.text;
 	var postNum = 1;
 	var teamCode = "";
-	db.serialize(function(){
-		db.all("SELECT * FROM Announcements", function(err, results){
-			if(results.length == 0){
-				postNum = 1
-			}else{
-				postNum = results[results.length-1].postNum + 1;
-			}
-		});
-	});
 	db.serialize(function() {
 		db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, results){
 			if (typeof(results) != "undefined"&&results.length > 0){
-					teamCode = results[0].teamCode;
-					db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER)");
-					db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode, postNum].join("','")+ "')");
-					res.end("success");
+				teamCode = results[0].teamCode;
+				db.all("SELECT * FROM Announcements WHERE teamCode='" + teamCode + "'", function(err, results){
+					if(results.length == 0){
+						postNum = 1
+					}else{
+						postNum = results[results.length-1].postNum + 1;
+					}
+				});
+				db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER)");
+				db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode, postNum].join("','")+ "')");
+				res.end("success");
 			}
 			else {
 				res.end("fail");
