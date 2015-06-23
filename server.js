@@ -2,7 +2,7 @@ var http = require("http");
 var fs = require("fs");
 var url = require("url");
 var qs = require("querystring");
-//var io = require("socket.io");
+var io = require("socket.io");
 var sqlite = require("sqlite3");
 var db = new sqlite.Database("data.db");
 
@@ -79,6 +79,54 @@ function addAction(path, method, cb) {
 		cb: cb
 	});
 }
+addAction("loadmessages", "POST", function(req, res, get, post) {
+	//Add user verification
+	var data = parseJSON(post);
+	var user1 = data.user1.username;
+	var user2 = data.user2.username;
+	var name1 = data.user1.name;
+	var name2 = data.user2.name;
+	db.serialize(function() {
+		db.run("CREATE TABLE IF NOT EXISTS ChatList (code TEXT, user1 TEXT, user2 TEXT)");
+		db.all("SELECT * FROM ChatList WHERE (user1 = '" + user1 + "' OR user2 = '" + user1 + "') AND (user1 = '" + user2 + "' OR user2 = '" + user2 + "')", function(err, results){
+			if (typeof(results) != "undefined"&&results.length == 1){
+				var code = results[0].code;
+				db.run("CREATE TABLE IF NOT EXISTS " + code + "_Messages (sender TEXT, message TEXT, user TEXT)");
+				db.all("SELECT * FROM " + code + "_Messages", function(err, messages){
+					res.end(JSON.stringify({"chatcode":code, "messages":messages}));
+				});
+			}
+			else {
+				var newChatCode = randomStr();
+				db.run("INSERT INTO ChatList VALUES ('" + [newChatCode, user1, user2].join("','") + "')");
+				db.run("CREATE TABLE IF NOT EXISTS " + newChatCode + "_Messages (sender TEXT, message TEXT, user TEXT)");
+				res.end(JSON.stringify({"chatcode":newChatCode, "messages":[]}));
+			}
+		});
+	});
+});
+
+addAction("addmessage", "POST", function(req, res, get, post) {
+	//Add user verification
+	var data = parseJSON(post);
+	var user = data.username;
+	var name = data.name;
+	var message = data.message;
+	var chatcode = data.chatcode;
+	db.serialize(function() {
+		db.all("SELECT code FROM ChatList WHERE code = '" + chatcode + "'", function(err, results){
+			if (typeof(results) != "undefined"&&results.length == 1){
+				db.run("CREATE TABLE IF NOT EXISTS " + chatcode + "_Messages (sender TEXT, message TEXT, user TEXT)");
+				db.run("INSERT INTO " + chatcode + "_Messages VALUES ('" + [name, message, user].join("','") + "')");
+				res.end("success");
+			}
+			else {
+				res.end("fail");
+			}
+		});
+	});
+});
+
 addAction("getteammates", "POST", function(req, res, get, post) {
 	var data = parseJSON(post);
 	var user = data.user;
@@ -87,7 +135,7 @@ addAction("getteammates", "POST", function(req, res, get, post) {
 		db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, result){
 			if (typeof(result) != "undefined"&&result.length > 0){
 				teamCode = result[0].teamCode;
-				db.all("SELECT first, last FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results){
+				db.all("SELECT first, last, user FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results){
 					console.log(results);
 					if (typeof(results) != "undefined"&&results.length > 0){
 						res.end(JSON.stringify(results));
@@ -98,6 +146,23 @@ addAction("getteammates", "POST", function(req, res, get, post) {
 				});
 			}
 			else {
+				res.end("fail");
+			}
+		});
+	});
+});
+addAction("deletePost", "POST", function(req, res, get, post){
+	var data = JSON.parse(post);
+	var postNum = data.postNum;
+	var user = data.user;
+	var teamCode = "";
+	db.serialize(function(){
+		db.all("SELECT teamCode from Users WHERE user = '" + user + "'", function(err, results){
+			if(typeof(results) != undefined && results.length > 0){
+				teamCode = results[0].teamCode;
+				db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "' AND teamCode='" + teamCode + "'");
+				res.end("success");
+			}else{
 				res.end("fail");
 			}
 		});
@@ -239,24 +304,6 @@ addAction("announce", "POST", function(req, res, get, post) {
 	});
 });
 
-addAction("deletePost", "POST", function(req, res, get, post){
-	var data = JSON.parse(post);
-	var postNum = data.postNum;
-	var user = data.user;
-	var teamCode = "";
-	db.serialize(function(){
-		db.all("SELECT teamCode from Users WHERE user = '" + user + "'", function(err, results){
-			if(typeof(results) != undefined && results.length > 0){
-				teamCode = results[0].teamCode;
-				db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "' AND teamCode='" + teamCode + "'");
-				res.end("success");
-			}else{
-				res.end("fail");
-			}
-		});
-	});
-});
-
 addAction("getannouncements", "POST", function(req, res, get, post) {
 	var data = JSON.parse(post);
 	var user = data.user;
@@ -381,12 +428,40 @@ function isValidInput(str) {
 	return true;
 }
 
-/*
+var clients = []
 io.listen(server).on("connection", function(socket) {
-
 	socket.on("disconnect", function() {
-		
+		for(var i = 0; i < clients.length; i++) {
+   			if(clients[i].socket == socket) {
+    			clients.splice(i, 1);
+    			break;
+   			}
+  		}
 	});
-
+	socket.on("newmessage", function(data){
+		if (typeof(data) != "undefined"&&data != ""){
+			for(var i = 0; i < clients.length; i++) {
+   				if(clients[i].chatcode == data.chatcode) {
+    				clients[i].socket.emit("message", data);
+   				}
+  			}
+		}
+	});
+	socket.on("updateclient", function(data){
+		if (typeof(data) != "undefined"&&data != ""){
+			var isConnected = false;
+			for (var i = 0;i < clients.length;i++){
+				if (socket == clients[i].socket){
+					isConnected = true;
+					clients[i].chatcode = data.chatcode;
+					clients[i].user = data.user;
+					break;
+				}
+			}
+			if (!isConnected){
+				clients.push({"socket":socket, "chatcode":data.chatcode, "user":data.user});
+			}
+			socket.emit("updated", {});	
+		}
+	});
 });
-*/
