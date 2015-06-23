@@ -226,10 +226,11 @@ addAction("announce", "POST", function(req, res, get, post) {
 					}else{
 						postNum = results[results.length-1].postNum + 1;
 					}
+					db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER)");
+					db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode, postNum].join("','")+ "')");
+					res.end("success");
 				});
-				db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER)");
-				db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode, postNum].join("','")+ "')");
-				res.end("success");
+				
 			}
 			else {
 				res.end("fail");
@@ -247,7 +248,7 @@ addAction("deletePost", "POST", function(req, res, get, post){
 		db.all("SELECT teamCode from Users WHERE user = '" + user + "'", function(err, results){
 			if(typeof(results) != undefined && results.length > 0){
 				teamCode = results[0].teamCode;
-				db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "'");
+				db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "' AND teamCode='" + teamCode + "'");
 				res.end("success");
 			}else{
 				res.end("fail");
