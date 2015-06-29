@@ -79,6 +79,7 @@ function addAction(path, method, cb) {
 		cb: cb
 	});
 }
+
 addAction("loadmessages", "POST", function(req, res, get, post) {
 	//Add user verification
 	var data = parseJSON(post);
@@ -127,6 +128,56 @@ addAction("addmessage", "POST", function(req, res, get, post) {
 	});
 });
 
+addAction("loadgroupmessages", "POST", function(req, res, get, post){
+	var data = parseJSON(post);
+	var user = data.user; //Verify user
+	var chatID = data.chatID;
+	db.serialize(function(){
+		db.all("SELECT * FROM " + chatID + "_Messages", function(err, results){
+			if (typeof(results) != "undefined"&&results.length > 0){
+				res.end(results);
+			}
+			else {
+				res.end([]);
+			}
+		});
+	});
+});
+
+addAction("creategroupchat", "POST", function(req, res, get, post){
+	var data = parseJSON(post);
+	var creator = data.creator;//Verify user
+	var users = data.users;
+	var chatName = data.chatName;
+	var teamCode = data.teamCode; //Use MAYbe
+	var chatID = randomStr();
+	db.serialize(function(){
+		db.run("CREATE TABLE IF NOT EXISTS ChatGroups (groupName TEXT, groupID TEXT, user TEXT)");
+		db.run("CREATE TABLE IF NOT EXISTS " + chatID + "_Messages (sender TEXT, message TEXT, user TEXT)")
+		for (var i = 0; i < users.length; i++){
+			var user = users[i];
+			db.run("INSERT INTO ChatGroups VALUES ('" + [chatName, chatID, user].join("','") + "')")
+		}
+		res.end({"chatName":chatName, "chatID":chatID});
+	});
+});
+
+addAction("getgroupchats", "POST", function(req, res, get, post){
+	var data = parseJSON(post);
+	var user = data.user; //Verify user
+	var teamCode = data.teamCode;
+	db.serialize(function(){
+		db.all("SELECT groupName, groupID FROM ChatGroups WHERE user = '" + user + "'", function(err, results){
+			if (typeof(results) != "undefined"&&results.length > 0){
+				res.end(results);
+			}
+			else {
+				res.end([]);
+			}
+		});
+	});
+});
+
 addAction("getteammates", "POST", function(req, res, get, post) {
 	var data = parseJSON(post);
 	var user = data.user;
@@ -136,7 +187,6 @@ addAction("getteammates", "POST", function(req, res, get, post) {
 			if (typeof(result) != "undefined"&&result.length > 0){
 				teamCode = result[0].teamCode;
 				db.all("SELECT first, last, user FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results){
-					console.log(results);
 					if (typeof(results) != "undefined"&&results.length > 0){
 						res.end(JSON.stringify(results));
 					}
@@ -151,6 +201,7 @@ addAction("getteammates", "POST", function(req, res, get, post) {
 		});
 	});
 });
+
 addAction("deletePost", "POST", function(req, res, get, post){
 	var data = JSON.parse(post);
 	var postNum = data.postNum;
@@ -178,12 +229,7 @@ addAction("createUser", "POST", function(req, res, get, post) {
 	var firstName = data.firstName;
 	var lastName = data.lastName;
 	var teamCode = data.teamCode;
-	console.log(teamCode + " is the code");
 	var token = randomStr();
-	console.log("Ran2");
-	console.log(user);
-	console.log(pass);
-	console.log("hi");
 	db.serialize(function() {
 		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, teamCode TEXT, subdivision TEXT, phone TEXT)");
 		db.run("CREATE TABLE IF NOT EXISTS Teams (number TEXT, name TEXT, code TEXT)");//number is text for a reason, don't change
@@ -200,16 +246,14 @@ addAction("createUser", "POST", function(req, res, get, post) {
 			}
 		});
 	});
-	
+
 });
 addAction("createTeam", "POST", function(req, res, get, post) {
-
-	var data = parseJSON(post);	
+	var data = parseJSON(post);
 	var user = data.user;
 	var teamName = data.teamName;
 	var teamNumber = data.teamNumber;
 	var chosenCode = data.chosenCode;
-	
 	db.serialize(function() {
 		db.run("CREATE TABLE IF NOT EXISTS Teams (number TEXT, name TEXT, code TEXT)");//number is text for a reason, don't change
 		db.all("SELECT code FROM Teams WHERE code = '" + chosenCode + "'", function(err, results) {
@@ -218,19 +262,16 @@ addAction("createTeam", "POST", function(req, res, get, post) {
 			}
 			else {
 				db.run("INSERT INTO Teams VALUES ('" +[teamNumber, teamName, chosenCode].join("','")+ "')");
-				res.end("added team"); 
+				res.end("added team");
 			}
 		});
 	});
-			
+
 });
 addAction("loginUser", "POST", function(req, res, get, post) {
  	var data = parseJSON(post);
  	var pass = data.pass;
  	var user = data.user;
- 	console.log(user);
- 	console.log(pass);
- 	console.log("Ran3");
  	db.serialize(function() {
  		db.run("CREATE TABLE IF NOT EXISTS Sessions (user TEXT, token TEXT)");
 		db.run("CREATE TABLE IF NOT EXISTS Users (user TEXT, pass TEXT, email TEXT, first TEXT, last TEXT, teamName TEXT, teamNumber TEXT, teamCode TEXT, subdivision TEXT, phone TEXT)");
@@ -295,7 +336,7 @@ addAction("announce", "POST", function(req, res, get, post) {
 					db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode, postNum].join("','")+ "')");
 					res.end("success");
 				});
-				
+
 			}
 			else {
 				res.end("fail");
@@ -461,7 +502,7 @@ io.listen(server).on("connection", function(socket) {
 			if (!isConnected){
 				clients.push({"socket":socket, "chatcode":data.chatcode, "user":data.user});
 			}
-			socket.emit("updated", {});	
+			socket.emit("updated", {});
 		}
 	});
 });
