@@ -109,9 +109,10 @@ addAction("loadmessages", "POST", function(req, res, get, post) {
 
 addAction("getPic", "POST", function(req, res, get, post){
 	var data = parseJSON(post);
-	var user = data.user;
+	var user = get.user;
 	db.run("CREATE TABLE IF NOT EXISTS UserProfilePics (user TEXT, pic BLOB)");
 	db.all("SELECT * FROM UserProfilePics WHERE user = '" + user + "'", function(err, result) {
+		console.log(result);
 		if (typeof(result) != "undefined"&&result.length == 1){
 			res.end(result[0].pic);
 		}
@@ -125,10 +126,11 @@ addAction("uploadProfPic", "POST", function(req, res, get, post){
 	var data = parseJSON(post);
 	var user = data.user;
 	var pic = data.pic;
+	console.log(user);
 	db.serialize(function() {
 		db.run("CREATE TABLE IF NOT EXISTS UserProfilePics (user TEXT, pic BLOB)");
 		var prep = db.prepare("INSERT INTO UserProfilePics VALUES ('"+ user + "', ?)");
-		prep.run(pic);
+		prep.run(new Buffer(pic));
 		prep.finalize();
 		res.end("success");
 	});
