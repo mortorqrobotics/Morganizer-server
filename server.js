@@ -109,7 +109,7 @@ addAction("loadmessages", "POST", function(req, res, get, post) {
 
 addAction("getPic", "POST", function(req, res, get, post){
 	var data = parseJSON(post);
-	var user = get.user;
+	var user = data.user;
 	db.run("CREATE TABLE IF NOT EXISTS UserProfilePics (user TEXT, pic BLOB)");
 	db.all("SELECT * FROM UserProfilePics WHERE user = '" + user + "'", function(err, result) {
 		console.log(result);
