@@ -107,6 +107,19 @@ addAction("loadmessages", "POST", function(req, res, get, post) {
 	});
 });
 
+addAction("uploadProfPic", "POST", function(req, res, get, post){
+	var data = parseJSON(post);
+	var user = data.user;
+	var pic = data.pic;
+	db.serialize(function() {
+		db.run("CREATE TABLE IF NOT EXISTS UserProfilePics (user TEXT, pic BLOB)");
+		var prep = db.prepare("INSERT INTO UserProfilePics VALUES ('"+ user + "', ?)");
+		prep.run(pic);
+		prep.finalize();
+		res.end("success");
+	});
+});
+
 addAction("addmessage", "POST", function(req, res, get, post) {
 	//Add user verification
 	var data = parseJSON(post);
