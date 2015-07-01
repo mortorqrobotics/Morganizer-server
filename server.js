@@ -481,10 +481,18 @@ io.listen(server).on("connection", function(socket) {
 	});
 	socket.on("newmessage", function(data){
 		if (typeof(data) != "undefined"&&data != ""){
+			//Sender(client) must send array of usernames that it is sending to
 			for(var i = 0; i < clients.length; i++) {
    				if(clients[i].chatcode == data.chatcode) {
     				clients[i].socket.emit("message", data);
    				}
+				else {//Uncomment when client is done w/ notifications
+					/*for (var j = 0; j < data.recievers.length; j++){
+						if (clients[i].user == data.recievers[j]){
+							clients[i].socket.emit("notification", data);
+						}
+					}*/
+				}
   			}
 		}
 	});
@@ -496,11 +504,12 @@ io.listen(server).on("connection", function(socket) {
 					isConnected = true;
 					clients[i].chatcode = data.chatcode;
 					clients[i].user = data.user;
+					//clients[i].page = data.page; Use later
 					break;
 				}
 			}
 			if (!isConnected){
-				clients.push({"socket":socket, "chatcode":data.chatcode, "user":data.user});
+				clients.push({"socket":socket, "chatcode":data.chatcode,"page":"use later", "user":data.user});
 			}
 			socket.emit("updated", {});
 		}
