@@ -107,6 +107,20 @@ addAction("loadmessages", "POST", function(req, res, get, post) {
 	});
 });
 
+addAction("getPic", "POST", function(req, res, get, post){
+	var data = parseJSON(post);
+	var user = data.user;
+	db.run("CREATE TABLE IF NOT EXISTS UserProfilePics (user TEXT, pic BLOB)");
+	db.all("SELECT * FROM UserProfilePics WHERE user = '" + user + "'", function(err, result) {
+		if (typeof(result) != "undefined"&&result.length == 1){
+			res.end(result[0].pic);
+		}
+		else {
+			res.end("fail");
+		}
+	});
+});
+
 addAction("uploadProfPic", "POST", function(req, res, get, post){
 	var data = parseJSON(post);
 	var user = data.user;
