@@ -8,14 +8,14 @@ var db = new sqlite.Database("data.db");
 
 function parseJSON(str) {
 	try {
-		return JSON.parse(str);
+		return JSON.parse(String(str));
 	}
 	catch(ex) {}
 }
 
 var server = http.createServer(function(req, res) {
 	var path = url.parse(req.url).pathname;
-	var get = qs.parse(url.parse(req.url).querystring);
+	var get = qs.parse(url.parse(req.url).query);
 	var any = false;
 	for(var i = 0; i < actions.length; i++) {
 		if(path.toLowerCase() == ("/f/" + actions[i].path).toLowerCase()) {
@@ -27,7 +27,7 @@ var server = http.createServer(function(req, res) {
 						data = Buffer.concat([data, chunk]);
 					});
 					req.on("end", function() {
-						action.cb(req, res, get, String(data));
+						action.cb(req, res, get, data);
 					});
 				})();
 			}
@@ -107,12 +107,11 @@ addAction("loadmessages", "POST", function(req, res, get, post) {
 	});
 });
 
-addAction("getPic", "POST", function(req, res, get, post){
-	var data = parseJSON(post);
-	var user = data.user;
+addAction("getPic", "GET", function(req, res, get){
+	//Add user verification
+	var user = get.user;
 	db.run("CREATE TABLE IF NOT EXISTS UserProfilePics (user TEXT, pic BLOB)");
 	db.all("SELECT * FROM UserProfilePics WHERE user = '" + user + "'", function(err, result) {
-		console.log(result);
 		if (typeof(result) != "undefined"&&result.length == 1){
 			res.end(result[0].pic);
 		}
@@ -123,14 +122,13 @@ addAction("getPic", "POST", function(req, res, get, post){
 });
 
 addAction("uploadProfPic", "POST", function(req, res, get, post){
-	var data = parseJSON(post);
-	var user = data.user;
-	var pic = data.pic;
-	console.log(user);
+	//Add user verification
+	var user = get.user;
+	var pic = post;
 	db.serialize(function() {
 		db.run("CREATE TABLE IF NOT EXISTS UserProfilePics (user TEXT, pic BLOB)");
 		var prep = db.prepare("INSERT INTO UserProfilePics VALUES ('"+ user + "', ?)");
-		prep.run(new Buffer(pic));
+		prep.run(pic);
 		prep.finalize();
 		res.end("success");
 	});
@@ -232,7 +230,7 @@ addAction("getteammates", "POST", function(req, res, get, post) {
 });
 
 addAction("deletePost", "POST", function(req, res, get, post){
-	var data = JSON.parse(post);
+	var data = parseJSON(post);
 	var postNum = data.postNum;
 	var user = data.user;
 	var teamCode = "";
@@ -345,7 +343,7 @@ addAction("addEvent", "POST", function(req, res, get, post) {
 
 addAction("announce", "POST", function(req, res, get, post) {
 	console.log("post");
-	var data = JSON.parse(post);
+	var data = parseJSON(post);
 	var user = data.user;
 	var nameDate = data.nameDate;
 	var text = data.text;
@@ -375,7 +373,7 @@ addAction("announce", "POST", function(req, res, get, post) {
 });
 
 addAction("getannouncements", "POST", function(req, res, get, post) {
-	var data = JSON.parse(post);
+	var data = parseJSON(post);
 	var user = data.user;
 	var teamCode = "";
 	db.serialize(function() {
