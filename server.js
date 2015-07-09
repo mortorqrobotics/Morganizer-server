@@ -98,7 +98,7 @@ addAction("loadmessages", "POST", function(req, res, get, post) {
 				});
 			}
 			else {
-				var newChatCode = randomStr();
+				var newChatCode = "A" + randomStr();
 				db.run("INSERT INTO ChatList VALUES ('" + [newChatCode, user1, user2].join("','") + "')");
 				db.run("CREATE TABLE IF NOT EXISTS " + newChatCode + "_Messages (sender TEXT, message TEXT, user TEXT)");
 				res.end(JSON.stringify({"chatcode":newChatCode, "messages":[]}));
@@ -192,7 +192,7 @@ addAction("creategroupchat", "POST", function(req, res, get, post){
 addAction("getgroupchats", "POST", function(req, res, get, post){
 	var data = parseJSON(post);
 	var user = data.user; //Verify user
-	var teamCode = data.teamCode;
+	var teamCode = data.teamCode;//use later
 	db.serialize(function(){
 		db.all("SELECT groupName, groupID FROM ChatGroups WHERE user = '" + user + "'", function(err, results){
 			if (typeof(results) != "undefined"&&results.length > 0){
@@ -207,7 +207,7 @@ addAction("getgroupchats", "POST", function(req, res, get, post){
 
 addAction("getteammates", "POST", function(req, res, get, post) {
 	var data = parseJSON(post);
-	var user = data.user;
+	var user = data.user;//verify user
 	var teamCode = "";
 	db.serialize(function() {
 		db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, result){
