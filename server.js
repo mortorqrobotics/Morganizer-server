@@ -359,8 +359,8 @@ addAction("announce", "POST", function(req, res, get, post) {
 					}else{
 						postNum = results[results.length-1].postNum + 1;
 					}
-					db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER)");
-					db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode, postNum].join("','")+ "')");
+					db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER, user TEXT)");
+					db.run("INSERT INTO Announcements VALUES ('" +[nameDate, text, teamCode, postNum, user].join("','")+ "')");
 					res.end("success");
 				});
 
@@ -377,7 +377,7 @@ addAction("getannouncements", "POST", function(req, res, get, post) {
 	var user = data.user;
 	var teamCode = "";
 	db.serialize(function() {
-		db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER)");
+		db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER, user TEXT)");
 		db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, results){
 			if (typeof(results) != "undefined"&&results.length > 0){
 				teamCode = results[0].teamCode;
