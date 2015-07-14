@@ -5,6 +5,7 @@ var qs = require("querystring");
 var io = require("socket.io");
 var sqlite = require("sqlite3");
 var db = new sqlite.Database("data.db");
+var clients = [];
 
 function parseJSON(str) {
     try {
@@ -229,7 +230,17 @@ addAction("getteammates", "POST", function(req, res, get, post) {
                 teamCode = result[0].teamCode;
                 db.all("SELECT first, last, user FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
                     if (typeof(results) != "undefined" && results.length > 0) {
-                        res.end(JSON.stringify(results));
+                        var teammates = results;
+                        for (var i = 0; i < teammates.length; i++){
+                            teammates[i]["status"] = "offline";
+                            for (var j = 0; j < clients.length; j++){
+                                if (clients[j].teamcode == teamCode && teammates[i].user == clients[j].user){
+                                    teammates[i].status = "online";
+                                    break;
+                                }
+                            }
+                        }
+                        res.end(JSON.stringify(teammates));
                     } else {
                         res.end("fail");
                     }
@@ -332,6 +343,7 @@ addAction("loginUser", "POST", function(req, res, get, post) {
                 var firstName = results[0].first;
                 var lastName = results[0].last;
                 var name = results[0].teamName;
+                var code = results[0].teamCode;
                 var number = results[0].teamNumber;
                 db.run("INSERT INTO Sessions VALUES ('" + [user, token].join("','") + "')");
                 res.end(JSON.stringify({
@@ -340,6 +352,7 @@ addAction("loginUser", "POST", function(req, res, get, post) {
                     "email": email,
                     "teamName": name,
                     "teamNumber": number,
+                    "teamCode":code,
                     "subdivision": subdivision,
                     "phone": phone,
                     "first": firstName,
@@ -370,7 +383,6 @@ addAction("addEvent", "POST", function(req, res, get, post) {
 });
 
 addAction("announce", "POST", function(req, res, get, post) {
-    console.log("post");
     var data = parseJSON(post);
     var user = data.user;
     var nameDate = data.nameDate;
@@ -519,11 +531,15 @@ function isValidInput(str) {
     return true;
 }
 
-var clients = []
 io.listen(server).on("connection", function(socket) {
     socket.on("disconnect", function() {
         for (var i = 0; i < clients.length; i++) {
             if (clients[i].socket == socket) {
+                for (var j = 0; j < clients.length; j++) {
+                    if (clients[i].teamcode == clients[j].teamcode){
+                        clients[j].socket.emit("updateindicator", {"user":clients[i].user, "status":"offline"});
+                    }
+                }
                 clients.splice(i, 1);
                 break;
             }
@@ -553,6 +569,7 @@ io.listen(server).on("connection", function(socket) {
                     isConnected = true;
                     clients[i].chatcode = data.chatcode;
                     clients[i].user = data.user;
+                    clients[i].teamcode = data.teamcode;
                     //clients[i].page = data.page; Use later
                     break;
                 }
@@ -561,9 +578,15 @@ io.listen(server).on("connection", function(socket) {
                 clients.push({
                     "socket": socket,
                     "chatcode": data.chatcode,
+                    "teamcode":data.teamcode,
                     "page": "use later",
                     "user": data.user
                 });
+                for (var i = 0; i < clients.length; i++) {
+                    if (clients[i].teamcode == data.teamcode){
+                        clients[i].socket.emit("updateindicator", {"user":data.user, "status":"online"});
+                    }
+                }
             }
             socket.emit("updated", {});
         }
