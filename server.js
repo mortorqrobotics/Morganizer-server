@@ -170,13 +170,27 @@ addAction("loadgroupmessages", "POST", function(req, res, get, post) {
     db.serialize(function() {
         db.all("SELECT * FROM " + chatID + "_Messages", function(err, results) {
             if (typeof(results) != "undefined" && results.length > 0) {
-                res.end(JSON.stringify({
-                    "messages": results
-                }));
-            } else {
-                res.end(JSON.stringify({
-                    "messages": []
-                }));
+                db.all("SELECT user FROM ChatGroups WHERE groupID='" + chatID + "'", function(err, users) {
+                    if (typeof(users) != "undefined" && results.length > 0) {
+                        res.end(JSON.stringify({
+                            "messages": results,
+                            "users":users
+                        }));
+                    }
+                });
+            }
+            else {
+                db.all("SELECT user FROM ChatGroups WHERE groupID='" + chatID + "'", function(err, users) {
+                    if (typeof(users) != "undefined" && results.length > 0) {
+                        res.end(JSON.stringify({
+                            "messages": [],
+                            "users":users
+                        }));
+                    }
+                    else {
+                        res.end("fail");
+                    }
+                });
             }
         });
     });
@@ -547,16 +561,16 @@ io.listen(server).on("connection", function(socket) {
     });
     socket.on("newmessage", function(data) {
         if (typeof(data) != "undefined" && data != "") {
-            //Sender(client) must send array of usernames that it is sending to
             for (var i = 0; i < clients.length; i++) {
                 if (clients[i].chatcode == data.chatcode) {
                     clients[i].socket.emit("message", data);
-                } else { //Uncomment when client is done w/ notifications
-                    /*for (var j = 0; j < data.recievers.length; j++){
-                    	if (clients[i].user == data.recievers[j]){
+                }
+                else {
+                    for (var j = 0; j < data.recievers.length; j++){
+                    	if (clients[i].user == data.recievers[j]&&clients[i].user != data.user){
                     		clients[i].socket.emit("notification", data);
                     	}
-                    }*/
+                    }
                 }
             }
         }
