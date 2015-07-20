@@ -13,6 +13,13 @@ function parseJSON(str) {
     } catch (ex) {}
 }
 
+function bytesToSize(bytes) {
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes == 0) return '0 Byte';
+    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+    return Math.round(bytes / Math.pow(1024, i), 2) + " " + sizes[i];
+};
+
 var server = http.createServer(function(req, res) {
     var path = url.parse(req.url).pathname;
     var get = qs.parse(url.parse(req.url).query);
@@ -136,6 +143,68 @@ addAction("uploadProfPic", "POST", function(req, res, get, post) {
     });
 });
 
+addAction("uploadtodrive", "POST", function(req, res, get, post) {
+    //Add user verification
+    var file = post;
+    var fileSize = bytesToSize(post.length);
+    var user = unescape(get.user);
+    var teamCode = unescape(get.teamcode);
+    var rawName = unescape(get.rawname);
+    var folder = unescape(get.folder);
+    var fileName = unescape(get.filename);
+    var type = rawName.split(".").pop().toLowerCase();
+    var fileCode = "F" + randomStr();
+    db.serialize(function() {
+        if (post.length < 50000000){
+            db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
+            var prep = db.prepare("INSERT INTO DriveFiles VALUES ('" + [teamCode, folder, fileName, fileCode, fileSize, type, rawName, user].join("','") + "', ?)");
+            prep.run(file);
+            prep.finalize();
+            res.end(JSON.stringify({"fileCode":fileCode, "fileType":type, "fileSize":fileSize}));
+        }
+        else {
+            res.end("Too large")
+        }
+    });
+});
+
+addAction("getfile", "GET", function(req, res, get) {
+    //Add user verifcation
+    var user = get.user;
+    var fileCode = get.filecode;
+    db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
+        db.all("SELECT file, rawName FROM DriveFiles WHERE fileCode='"+ fileCode + "'", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0) {
+                res.setHeader("Content-disposition", "attachment; filename=" + results[0].rawName);
+                res.end(results[0].file);
+            }
+            else {
+                res.end("File does not exist")
+            }
+        });
+    });
+});
+
+addAction("showfiles", "POST", function(req, res, get, post){
+    //Add user verifcation
+    var data = parseJSON(post);
+    var user = data.user;
+    var teamCode = data.teamCode;
+    var folder = data.folder;
+    db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
+        db.all("SELECT fileName, fileCode, fileSize, fileType FROM DriveFiles WHERE teamCode = '" + teamCode + "' AND folder = '" + folder + "' ", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else {
+                res.end(JSON.stringify([]));
+            }
+        })
+    });
+});
+
 addAction("addmessage", "POST", function(req, res, get, post) {
     //Add user verification
     var data = parseJSON(post);
@@ -174,20 +243,18 @@ addAction("loadgroupmessages", "POST", function(req, res, get, post) {
                     if (typeof(users) != "undefined" && results.length > 0) {
                         res.end(JSON.stringify({
                             "messages": results,
-                            "users":users
+                            "users": users
                         }));
                     }
                 });
-            }
-            else {
+            } else {
                 db.all("SELECT user FROM ChatGroups WHERE groupID='" + chatID + "'", function(err, users) {
                     if (typeof(users) != "undefined" && results.length > 0) {
                         res.end(JSON.stringify({
                             "messages": [],
-                            "users":users
+                            "users": users
                         }));
-                    }
-                    else {
+                    } else {
                         res.end("fail");
                     }
                 });
@@ -245,10 +312,10 @@ addAction("getteammates", "POST", function(req, res, get, post) {
                 db.all("SELECT first, last, user FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
                     if (typeof(results) != "undefined" && results.length > 0) {
                         var teammates = results;
-                        for (var i = 0; i < teammates.length; i++){
+                        for (var i = 0; i < teammates.length; i++) {
                             teammates[i]["status"] = "offline";
-                            for (var j = 0; j < clients.length; j++){
-                                if (clients[j].teamcode == teamCode && teammates[i].user == clients[j].user){
+                            for (var j = 0; j < clients.length; j++) {
+                                if (clients[j].teamcode == teamCode && teammates[i].user == clients[j].user) {
                                     teammates[i].status = "online";
                                     break;
                                 }
@@ -366,7 +433,7 @@ addAction("loginUser", "POST", function(req, res, get, post) {
                     "email": email,
                     "teamName": name,
                     "teamNumber": number,
-                    "teamCode":code,
+                    "teamCode": code,
                     "subdivision": subdivision,
                     "phone": phone,
                     "first": firstName,
@@ -550,8 +617,12 @@ io.listen(server).on("connection", function(socket) {
         for (var i = 0; i < clients.length; i++) {
             if (clients[i].socket == socket) {
                 for (var j = 0; j < clients.length; j++) {
-                    if (clients[i].teamcode == clients[j].teamcode){
-                        clients[j].socket.emit("updateindicator", {"user":clients[i].user, "status":"offline"});
+                    if (clients[i].teamcode == clients[j].teamcode) {
+                        //Fix the thing
+                        clients[j].socket.emit("updateindicator", {
+                            "user": clients[i].user,
+                            "status": "offline"
+                        });
                     }
                 }
                 clients.splice(i, 1);
@@ -564,12 +635,11 @@ io.listen(server).on("connection", function(socket) {
             for (var i = 0; i < clients.length; i++) {
                 if (clients[i].chatcode == data.chatcode) {
                     clients[i].socket.emit("message", data);
-                }
-                else {
-                    for (var j = 0; j < data.recievers.length; j++){
-                    	if (clients[i].user == data.recievers[j]&&clients[i].user != data.user){
-                    		clients[i].socket.emit("notification", data);
-                    	}
+                } else {
+                    for (var j = 0; j < data.recievers.length; j++) {
+                        if (clients[i].user == data.recievers[j] && clients[i].user != data.user) {
+                            clients[i].socket.emit("notification", data);
+                        }
                     }
                 }
             }
@@ -592,13 +662,17 @@ io.listen(server).on("connection", function(socket) {
                 clients.push({
                     "socket": socket,
                     "chatcode": data.chatcode,
-                    "teamcode":data.teamcode,
+                    "teamcode": data.teamcode,
                     "page": "use later",
                     "user": data.user
                 });
+                //console.log(JSON.stringify(clients[clients.length - 1]));
                 for (var i = 0; i < clients.length; i++) {
-                    if (clients[i].teamcode == data.teamcode){
-                        clients[i].socket.emit("updateindicator", {"user":data.user, "status":"online"});
+                    if (clients[i].teamcode == data.teamcode) {
+                        clients[i].socket.emit("updateindicator", {
+                            "user": data.user,
+                            "status": "online"
+                        });
                     }
                 }
             }
