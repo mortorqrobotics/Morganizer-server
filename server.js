@@ -174,7 +174,7 @@ addAction("getfile", "GET", function(req, res, get) {
     var fileCode = get.filecode;
     db.serialize(function(){
         db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
-        db.all("SELECT file, rawName FROM DriveFiles WHERE fileCode='"+ fileCode + "'", function(err, results){
+        db.all("SELECT file, rawName, fileType FROM DriveFiles WHERE fileCode='"+ fileCode + "'", function(err, results){
             if (typeof(results) != "undefined"&&results.length > 0) {
                 res.setHeader("Content-disposition", "attachment; filename=" + results[0].rawName);
                 res.end(results[0].file);
@@ -185,6 +185,19 @@ addAction("getfile", "GET", function(req, res, get) {
         });
     });
 });
+
+addAction("deletefile", "POST", function(req, res, get, post) {
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var fileCode = data.fileCode;
+    db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
+        db.run("DELETE FROM DriveFiles WHERE fileCode = '"+fileCode+"'");
+        res.end("success");
+    })
+});
+
 
 addAction("showfiles", "POST", function(req, res, get, post){
     //Add user verifcation
@@ -645,6 +658,7 @@ io.listen(server).on("connection", function(socket) {
             }
         }
     });
+    //FIX NOTIFCATIONS
     socket.on("updateclient", function(data) {
         if (typeof(data) != "undefined" && data != "") {
             var isConnected = false;
