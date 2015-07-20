@@ -658,7 +658,7 @@ io.listen(server).on("connection", function(socket) {
             }
         }
     });
-    //FIX NOTIFCATIONS
+    //FIX ONLINE/OFFLINE INDICATOR WHEN TAB CLOSES AND ANOTHER IS OPEN
     socket.on("updateclient", function(data) {
         if (typeof(data) != "undefined" && data != "") {
             var isConnected = false;
