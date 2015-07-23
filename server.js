@@ -143,6 +143,62 @@ addAction("uploadProfPic", "POST", function(req, res, get, post) {
     });
 });
 
+addAction("newfolder", "POST", function(req, res, get, post) {
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var people = data.people;
+    var folderCode = "F" + randomStr();
+    var folderName = data.folderName;
+    people.push(user);
+    db.serialize(function() {
+        db.run("CREATE TABLE IF NOT EXISTS DriveFolders (user TEXT, folderName TEXT, folderCode TEXT)");
+        for (var i = 0; i < people.length; i++){
+            var person = people[i];
+            db.run("INSERT INTO DriveFolders VALUES ('"+[person, folderName, folderCode].join("','")+"')")
+        }
+        res.end(folderCode);
+    });
+});
+
+addAction("getfolders", "POST", function(req, res, get, post) {
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    db.serialize(function() {
+        db.run("CREATE TABLE IF NOT EXISTS DriveFolders (user TEXT, folderName TEXT, folderCode TEXT)");
+        db.all("SELECT folderName, folderCode FROM DriveFolders WHERE user = '"+user+"'", function(err, results){
+            res.end(JSON.stringify(results));
+        });
+    });
+});
+
+addAction("showallfiles", "POST", function(req, res, get, post){
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var teamCode = data.teamCode;
+    var allFiles = [];
+    db.serialize(function() {
+        db.run("CREATE TABLE IF NOT EXISTS DriveFolders (user TEXT, folderName TEXT, folderCode TEXT)");
+        db.all("SELECT folderCode FROM DriveFolders WHERE user = '"+user+"'", function(err, results){
+            var folders = results;
+            folders.push({"folderCode":user});
+            folders.push({"folderCode":teamCode});
+            var done = 0;
+            for (var i = 0; i < folders.length; i++) {
+                db.all("SELECT fileName, fileCode, fileSize, fileType FROM DriveFiles WHERE folder = '" + folders[i].folderCode + "' ", function(err, files){
+                    allFiles = allFiles.concat(files);
+                    done++;
+                    if (done == folders.length){
+                        res.end(JSON.stringify(allFiles));
+                    }
+                });
+            }
+        });
+    });
+});
+
 addAction("uploadtodrive", "POST", function(req, res, get, post) {
     //Add user verification
     var file = post;
