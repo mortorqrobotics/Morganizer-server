@@ -274,6 +274,65 @@ addAction("showfiles", "POST", function(req, res, get, post){
     });
 });
 
+addAction("addevent", "POST", function(req, res, get, post){
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var eventName = data.eventName;
+    var eventDesc = data.eventDesc;
+    var timeStamp = data.timeStamp;
+    var people = data.people;
+    people.push(user);
+    var day = data.day;
+    var month = data.month;
+    var year = data.year;
+    db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT)");
+        for (var i = 0; i < people.length; i++){
+            db.run("INSERT INTO AllEvents VALUES ('"+[people[i], eventName, eventDesc, timeStamp, day, month, year].join("','")+"')")
+        }
+        res.end("success");
+    });
+});
+
+addAction("getevents", "POST", function(req, res, get, post){
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var month = data.month;
+    var year = data.year;
+    db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT)");
+        db.all("SELECT * FROM AllEvents WHERE user = '" + user + "' AND year = '"+year+"' AND month = '"+month+"'", function(err, results){
+            if (typeof(results) != "undefined" && results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else {
+                res.end(JSON.stringify([]));
+            }
+        });
+    });
+});
+
+addAction("getupcomingevents", "POST", function(req, res, get, post){
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var currentTime = data.currentTime;
+    db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT)");
+        db.all("SELECT * FROM AllEvents WHERE user = '"+user+"' AND timeStamp > '"+currentTime+"' ORDER BY timeStamp ASC", function(err, results){
+            if (typeof(results) != "undefined" && results.length > 0){
+                res.end(JSON.stringify(results));
+                //Make only first 10-20ish?
+            }
+            else {
+                res.end(JSON.stringify([]));
+            }
+        });
+    })
+});
+
 addAction("addmessage", "POST", function(req, res, get, post) {
     //Add user verification
     var data = parseJSON(post);
@@ -373,28 +432,21 @@ addAction("getgroupchats", "POST", function(req, res, get, post) {
 addAction("getteammates", "POST", function(req, res, get, post) {
     var data = parseJSON(post);
     var user = data.user; //verify user
-    var teamCode = "";
+    var teamCode = data.teamCode;
     db.serialize(function() {
-        db.all("SELECT teamCode FROM Users WHERE user = '" + user + "'", function(err, result) {
-            if (typeof(result) != "undefined" && result.length > 0) {
-                teamCode = result[0].teamCode;
-                db.all("SELECT first, last, user FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
-                    if (typeof(results) != "undefined" && results.length > 0) {
-                        var teammates = results;
-                        for (var i = 0; i < teammates.length; i++) {
-                            teammates[i]["status"] = "offline";
-                            for (var j = 0; j < clients.length; j++) {
-                                if (clients[j].teamcode == teamCode && teammates[i].user == clients[j].user) {
-                                    teammates[i].status = "online";
-                                    break;
-                                }
-                            }
+        db.all("SELECT first, last, user FROM Users WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
+            if (typeof(results) != "undefined" && results.length > 0) {
+                var teammates = results;
+                for (var i = 0; i < teammates.length; i++) {
+                    teammates[i]["status"] = "offline";
+                    for (var j = 0; j < clients.length; j++) {
+                        if (clients[j].teamcode == teamCode && teammates[i].user == clients[j].user) {
+                            teammates[i].status = "online";
+                            break;
                         }
-                        res.end(JSON.stringify(teammates));
-                    } else {
-                        res.end("fail");
                     }
-                });
+                }
+                res.end(JSON.stringify(teammates));
             } else {
                 res.end("fail");
             }
@@ -515,6 +567,7 @@ addAction("loginUser", "POST", function(req, res, get, post) {
     });
 });
 
+/*
 addAction("addEvent", "POST", function(req, res, get, post) {
     var user = get.user;
     var data = parseJSON(post);
@@ -531,6 +584,7 @@ addAction("addEvent", "POST", function(req, res, get, post) {
         }
     });
 });
+*/
 
 addAction("announce", "POST", function(req, res, get, post) {
     var data = parseJSON(post);
@@ -580,6 +634,7 @@ addAction("getannouncements", "POST", function(req, res, get, post) {
     });
 });
 
+/*
 addAction("getEvents", "GET", function(req, res, get) {
     var user = get.user;
     validateSession(user, get.token, function(valid) {
@@ -595,6 +650,8 @@ addAction("getEvents", "GET", function(req, res, get) {
         }
     });
 });
+*/
+
 //Consider post data for token and search item (spaces)
 addAction("searchUsers", "GET", function(req, res, get) {
     var searchItem = get.item;
