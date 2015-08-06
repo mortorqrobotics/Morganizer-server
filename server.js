@@ -143,7 +143,16 @@ addAction("addteam", "POST", function(req, res, get, post){
 });
 
 addAction("getteams", "POST", function(req, res, get, post){
-    //TODO: this
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    db.serialize(function(){
+        db.all("SELECT * FROM TeamsForUsers WHERE user = '"+user+"'", function(err, results){
+            if (typeof(results) != "undefined"){
+                res.end(JSON.stringify(results));
+            }
+        });
+    });
 });
 
 addAction("getPic", "GET", function(req, res, get) {
