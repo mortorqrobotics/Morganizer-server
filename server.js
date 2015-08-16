@@ -6,7 +6,7 @@ var io = require("socket.io");
 var sqlite = require("sqlite3");
 var db = new sqlite.Database("data.db");
 var clients = [];
-
+//http.globalAgent.maxSockets = Inf;
 function parseJSON(str) {
     try {
         return JSON.parse(String(str));
@@ -147,6 +147,7 @@ addAction("getteams", "POST", function(req, res, get, post){
     var data = parseJSON(post);
     var user = data.user;
     db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS TeamsForUsers (user TEXT, teamCode TEXT, teamName TEXT, position TEXT, first TEXT, last TEXT, teamNumber TEXT)");
         db.all("SELECT * FROM TeamsForUsers WHERE user = '"+user+"'", function(err, results){
             if (typeof(results) != "undefined"){
                 res.end(JSON.stringify(results));
@@ -333,6 +334,129 @@ addAction("addevent", "POST", function(req, res, get, post){
     });
 });
 
+addAction("makescope", "POST", function(req, res, get, post){
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var scopeName = data.scopeName;
+    var teamCode = data.teamCode;
+    var status = data.status;
+    var members = data.members;
+    db.serialize(function(){
+        //Make so you can't have same name
+        db.run("CREATE TABLE IF NOT EXISTS ScopesForTeam (teamCode TEXT, scopeName TEXT, status TEXT, admin TEXT)");
+        db.run("CREATE TABLE IF NOT EXISTS UsersInScope (teamCode TEXT, scopeName TEXT, user TEXT)")
+        db.run("INSERT INTO ScopesForTeam VALUES ('"+[teamCode, scopeName, status, user].join("','")+"')");
+        db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, user].join("','")+"')");
+        //for (var i = 0; i < members.length; i++){
+            //db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, members[i]].join("','")+"')");
+        //}
+        db.run("CREATE TABLE IF NOT EXISTS PendingScopeInvites (inviter TEXT, teamCode TEXT, scopeName TEXT, newUser TEXT)");
+        for (var i = 0; i < members.length; i++){
+            db.run("INSERT INTO PendingScopeInvites VALUES ('"+[user, teamCode, scopeName, members[i]].join("','")+"')");
+        }
+        res.end("success")
+    })
+});
+
+addAction("getyourscopes", "POST", function(req, res, get, post){
+    //Add user verification
+    var data = parseJSON(post);
+    var user = data.user;
+    var teamCode = data.teamCode;
+    db.serialize(function(){
+        db.all("SELECT scopeName FROM UsersInScope WHERE user = '"+user+"' AND teamCode = '"+teamCode+"'", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else{
+                //Error or has no scope in this team
+                res.end(JSON.stringify([]));
+            }
+        });
+    });
+});
+addAction("getusersinscope", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var teamCode = data.teamCode;
+    var scopeName = data.scopeName;
+    db.serialize(function(){
+        db.all("SELECT user FROM UsersInScope WHERE scopeName = '"+scopeName+"' AND teamCode = '"+teamCode+"'", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else{
+                //Error or scope does not exist or no users in scope
+                res.end(JSON.stringify([]));
+            }
+        });
+    });
+});
+addAction("getpublicscopesforteam", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var teamCode = data.teamCode;
+    db.serialize(function(){
+        db.all("SELECT scopeName FROM ScopesForTeam WHERE teamCode = '"+teamCode+"' AND status = 'public'", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else{
+                //Error or no public scopes
+                res.end(JSON.stringify([]));
+            }
+        });
+    });
+});
+
+addAction("inviteuserstoscope", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var members = data.members;
+    var teamCode = data.teamCode;
+    var scopeName = data.scopeName;
+    db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS PendingScopeInvites (inviter TEXT, teamCode TEXT, scopeName TEXT, newUser TEXT)");
+        for (var i = 0; i < members; i++){
+            db.run("INSERT INTO PendingScopeInvites VALUES ('"+[user, teamCode, scopeName, members[i]].join("','")+"')")
+        }
+        res.end("success");
+    });
+});
+
+addAction("respondtoinvite", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var scopeName = data.scopeName;
+    var teamCode = data.teamCode;
+    var response = data.response;
+    db.serialize(function(){
+        db.run("DELETE FROM PendingScopeInvites WHERE newUser = '"+user+"' AND scopeName = '"+scopeName+"' AND teamCode = '"+teamCode+"'");
+        if (response == "accept"){
+            db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, user].join("','")+"')");
+        }
+        res.end("success")
+    });
+});
+
+addAction("getscopeinvites", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var teamCode = data.teamCode;
+    db.serialize(function(){
+        db.all("SELECT scopeName FROM PendingScopeInvites WHERE newUser = '"+user+"' AND teamCode = '"+teamCode+"'", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else{
+                //Error or no pending invites
+                res.end(JSON.stringify([]));
+            }
+        });
+    });
+});
+
 addAction("getevents", "POST", function(req, res, get, post){
     //Add user verification
     var data = parseJSON(post);
@@ -404,9 +528,9 @@ addAction("loadgroupmessages", "POST", function(req, res, get, post) {
     var chatID = data.chatID;
     db.serialize(function() {
         db.all("SELECT * FROM " + chatID + "_Messages", function(err, results) {
-            if (typeof(results) != "undefined" && results.length > 0) {
+            if (typeof(results) != "undefined") {
                 db.all("SELECT user FROM ChatGroups WHERE groupID='" + chatID + "'", function(err, users) {
-                    if (typeof(users) != "undefined" && results.length > 0) {
+                    if (typeof(users) != "undefined" && users.length > 0) {
                         res.end(JSON.stringify({
                             "messages": results,
                             "users": users
@@ -415,13 +539,17 @@ addAction("loadgroupmessages", "POST", function(req, res, get, post) {
                 });
             } else {
                 db.all("SELECT user FROM ChatGroups WHERE groupID='" + chatID + "'", function(err, users) {
-                    if (typeof(users) != "undefined" && results.length > 0) {
+                    if (typeof(users) != "undefined" && users.length > 0) {
                         res.end(JSON.stringify({
                             "messages": [],
                             "users": users
                         }));
                     } else {
-                        res.end("fail");
+                        //res.end("fail");
+                        res.end(JSON.stringify({
+                            "messages": [],
+                            "users": users
+                        }));
                     }
                 });
             }
@@ -485,7 +613,6 @@ addAction("getteammates", "POST", function(req, res, get, post) {
                     }
                 }
                 res.end(JSON.stringify(teammates));
-
             } else {
                 res.end(JSON.stringify([]));
             }
@@ -497,17 +624,10 @@ addAction("deletePost", "POST", function(req, res, get, post) {
     var data = parseJSON(post);
     var postNum = data.postNum;
     var user = data.user;
-    var teamCode = "";
+    var teamCode = data.teamCode;
     db.serialize(function() {
-        db.all("SELECT teamCode from Users WHERE user = '" + user + "'", function(err, results) {
-            if (typeof(results) != undefined && results.length > 0) {
-                teamCode = results[0].teamCode;
-                db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "' AND teamCode='" + teamCode + "'");
-                res.end("success");
-            } else {
-                res.end("fail");
-            }
-        });
+        db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "' AND teamCode='" + teamCode + "'");
+        res.end("success");
     });
 });
 addAction("createUser", "POST", function(req, res, get, post) {
@@ -561,6 +681,7 @@ addAction("createTeam", "POST", function(req, res, get, post) {
         });
     });
 });
+
 addAction("loginUser", "POST", function(req, res, get, post) {
     var data = parseJSON(post);
     var pass = data.pass;
