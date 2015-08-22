@@ -313,6 +313,51 @@ addAction("showfiles", "POST", function(req, res, get, post){
     });
 });
 
+addAction("updateattendance", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var updatedList = data.updatedList;
+    var eventID = data.eventID;
+    db.serialize(function(){
+        for (var i = 0; i < updatedList.length; i++){
+            db.run("UPDATE AllEvents SET isPresent = '"+updatedList[i].isPresent+"' WHERE user = '"+updatedList[i].user+"' AND eventID = '"+eventID+"'");
+        }
+        res.end("success");
+    });
+});
+
+addAction("getattendance", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var eventID = data.eventID;
+    db.serialize(function(){
+        db.all("SELECT user, isPresent FROM AllEvents WHERE eventID = '"+eventID+"'", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else {
+                res.end(JSON.stringify([]));
+            }
+        })
+    });
+});
+
+addAction("getuserinfo", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var desiredUser = data.desiredUser;
+    db.serialize(function(){
+        db.all("SELECT user, first, last, phone, email FROM Users WHERE user = '"+desiredUser+"'", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else {
+                res.end(JSON.stringify([]));
+            }
+        });
+    });
+});
+
 addAction("addevent", "POST", function(req, res, get, post){
     //Add user verification
     var data = parseJSON(post);
@@ -325,12 +370,13 @@ addAction("addevent", "POST", function(req, res, get, post){
     var day = data.day;
     var month = data.month;
     var year = data.year;
+    var eventID = "E"+randomStr();
     db.serialize(function(){
-        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT)");
+        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT, eventID TEXT, isPresent TEXT)");
         for (var i = 0; i < people.length; i++){
-            db.run("INSERT INTO AllEvents VALUES ('"+[people[i], eventName, eventDesc, timeStamp, day, month, year].join("','")+"')")
+            db.run("INSERT INTO AllEvents VALUES ('"+[people[i], eventName, eventDesc, timeStamp, day, month, year, eventID, "false"].join("','")+"')")
         }
-        res.end("success");
+        res.end(eventID);
     });
 });
 
@@ -464,7 +510,7 @@ addAction("getevents", "POST", function(req, res, get, post){
     var month = data.month;
     var year = data.year;
     db.serialize(function(){
-        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT)");
+        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT, eventID TEXT, isPresent TEXT)");
         db.all("SELECT * FROM AllEvents WHERE user = '" + user + "' AND year = '"+year+"' AND month = '"+month+"'", function(err, results){
             if (typeof(results) != "undefined" && results.length > 0){
                 res.end(JSON.stringify(results));
@@ -482,7 +528,7 @@ addAction("getupcomingevents", "POST", function(req, res, get, post){
     var user = data.user;
     var currentTime = data.currentTime;
     db.serialize(function(){
-        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT)");
+        db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT, eventID TEXT, isPresent TEXT)");
         db.all("SELECT * FROM AllEvents WHERE user = '"+user+"' AND timeStamp > '"+currentTime+"' ORDER BY timeStamp ASC", function(err, results){
             if (typeof(results) != "undefined" && results.length > 0){
                 res.end(JSON.stringify(results));
