@@ -226,7 +226,7 @@ addAction("showallfiles", "POST", function(req, res, get, post){
             folders.push({"folderCode":teamCode});
             var done = 0;
             for (var i = 0; i < folders.length; i++) {
-                db.all("SELECT fileName, fileCode, fileSize, fileType FROM DriveFiles WHERE folder = '" + folders[i].folderCode + "' ", function(err, files){
+                db.all("SELECT fileName, fileCode, fileSize, fileType, user FROM DriveFiles WHERE folder = '" + folders[i].folderCode + "' ", function(err, files){
                     allFiles = allFiles.concat(files);
                     done++;
                     if (done == folders.length){
@@ -302,7 +302,7 @@ addAction("showfiles", "POST", function(req, res, get, post){
     var folder = data.folder;
     db.serialize(function(){
         db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
-        db.all("SELECT fileName, fileCode, fileSize, fileType FROM DriveFiles WHERE teamCode = '" + teamCode + "' AND folder = '" + folder + "' ", function(err, results){
+        db.all("SELECT fileName, fileCode, fileSize, fileType, user FROM DriveFiles WHERE teamCode = '" + teamCode + "' AND folder = '" + folder + "' ", function(err, results){
             if (typeof(results) != "undefined"&&results.length > 0){
                 res.end(JSON.stringify(results));
             }
