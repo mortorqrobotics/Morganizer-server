@@ -342,6 +342,22 @@ addAction("getattendance", "POST", function(req, res, get, post){
     });
 });
 
+addAction("getuserabsences", "POST", function(req, res, get, post){
+    var data = parseJSON(post);
+    var user = data.user;
+    var desiredUser = data.desiredUser;
+    db.serialize(function(){
+        db.all("SELECT eventID, eventName, day, month, year FROM AllEvents WHERE isPresent = 'false' AND user = '"+desiredUser+"' ORDER BY timeStamp ASC", function(err, results){
+            if (typeof(results) != "undefined"&&results.length > 0){
+                res.end(JSON.stringify(results));
+            }
+            else {
+                res.end(JSON.stringify([]));
+            }
+        })
+    });
+});
+
 addAction("getuserinfo", "POST", function(req, res, get, post){
     var data = parseJSON(post);
     var user = data.user;
@@ -868,7 +884,8 @@ addAction("searchEvents", "GET", function(req, res, get) {
 
 function validateSession(user, token, cb) {
     db.all("SELECT * FROM Sessions WHERE user = '" + user + "' AND token = '" + token + "'", function(err, results) {
-        cb(typeof(results) != "undefined" && results.length > 0);
+        cb(typeof(results) != "undefined" && results.length > 0)
+
     });
 }
 
