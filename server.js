@@ -1,3 +1,4 @@
+var https = require("https");
 var http = require("http");
 var fs = require("fs");
 var url = require("url");
@@ -19,6 +20,12 @@ function bytesToSize(bytes) {
     var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
     return Math.round(bytes / Math.pow(1024, i), 2) + " " + sizes[i];
 };
+
+//var options = {
+  //key: fs.readFileSync('my-root-ca.key.pem'),
+  //cert: fs.readFileSync('my-root-ca.crt.pem')
+//};
+
 
 var server = http.createServer(function(req, res) {
     var path = url.parse(req.url).pathname;
@@ -120,6 +127,7 @@ addAction("loadmessages", "POST", function(req, res, get, post) {
 addAction("addteam", "POST", function(req, res, get, post){
     //Add user verification
     //TODO:Prevent SQL injection EVERYWHERE
+    //CHECK IF THEY ARE ALREADY IN
     var data = parseJSON(post);
     var user = data.user;
     var teamCode = data.teamCode;
@@ -281,18 +289,83 @@ addAction("getfile", "GET", function(req, res, get) {
     });
 });
 
+addAction("changepassword", "POST", function(req, res, get, post) {
+    var data = parseJSON(post);
+    var user = data.user;
+    var pass = data.pass;
+    db.serialize(function(){
+        db.all("SELECT * FROM Users WHERE user = '" + user + "'  AND pass = '" + pass + "'", function(err, results) {
+            if (typeof(results) != "undefined" && results.length > 0) {
+                db.run("DELETE FROM Sessions WHERE user = '"+user+"'");
+                res.end("sucess");
+            }
+            else {
+                res.end("fail")
+            }
+        });
+    });
+});
+
+addAction("logout", "POST", function(req, res, get, post) {
+    var data = parseJSON(post);
+    var user = data.user;
+    var token = data.token;
+    db.serialize(function(){
+        db.all("SELECT * FROM Sessions WHERE user = '" + user + "' AND token = '" + token + "'", function(err, results) {
+            if(typeof(results) != "undefined" && results.length > 0){
+                db.run("DELETE FROM Sessions WHERE user = '"+user+"' AND token = '"+token+"'");
+                res.end("sucess");
+            }
+            else {
+                res.end("fail");//this is ok
+            }
+        });
+    });
+});
+
+addAction("updatetoken", "POST", function(req, res, get, post) {
+    var data = parseJSON(post);
+    var user = data.user;
+    var token = data.token;
+    db.serialize(function(){
+        db.all("SELECT * FROM Sessions WHERE user = '" + user + "' AND token = '" + token + "'", function(err, results) {
+            if(typeof(results) != "undefined" && results.length > 0){
+                var newToken = "T"+randomStr();
+                db.run("INSERT INTO Sessions VALUES('"+[user, newToken].join("','")+"')");
+                setTimeout(function(){
+                    db.run("DELETE FROM Sessions WHERE user = '"+user+"' AND token = '"+token+"'");
+                }, 3000);
+                res.end(newToken);
+            }
+            else {
+                res.end("fail");
+            }
+        });
+    });
+});
+
 addAction("deletefile", "POST", function(req, res, get, post) {
     //Add user verification
+    //IF ADMIN BRO
     var data = parseJSON(post);
     var user = data.user;
     var fileCode = data.fileCode;
-    db.serialize(function(){
-        db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
-        db.run("DELETE FROM DriveFiles WHERE fileCode = '"+fileCode+"'");
-        res.end("success");
-    })
+    validateSession(user, data.token, function(valid) {
+        if (valid && isValidInput(fileCode) && isValidInput(user) && isValidInput(data.token)){
+            db.serialize(function(){
+                db.run("CREATE TABLE IF NOT EXISTS DriveFiles (teamCode TEXT, folder TEXT, fileName TEXT, fileCode TEXT, fileSize TEXT, fileType TEXT, rawName TEXT, user TEXT, file BLOB)");
+                //db.run("DELETE FROM DriveFiles WHERE fileCode = '"+fileCode+"'");
+                //db.run("DELETE FROM DriveFiles WHERE fileCode = 'lol';DROP TABLE Users;--"+"'");
+                var str = "DELETE FROM DriveFiles WHERE fileCode = '"+fileCode+"' AND user = '"+user+"'";
+                db.run(str);
+                res.end("success");
+            })
+        }
+        else {
+            res.end("fail");
+        }
+    });
 });
-
 
 addAction("showfiles", "POST", function(req, res, get, post){
     //Add user verifcation
@@ -564,25 +637,41 @@ addAction("addmessage", "POST", function(req, res, get, post) {
     var name = data.name;
     var message = data.message;
     var chatcode = data.chatcode;
-    db.serialize(function() {
-        db.all("SELECT code FROM ChatList WHERE code = '" + chatcode + "'", function(err, results) {
-            if (typeof(results) != "undefined" && results.length == 1) {
-                db.run("CREATE TABLE IF NOT EXISTS " + chatcode + "_Messages (sender TEXT, message TEXT, user TEXT)");
-                db.run("INSERT INTO " + chatcode + "_Messages VALUES ('" + [name, message, user].join("','") + "')");
-                res.end("success");
-            } else {
-                db.all("SELECT groupID FROM ChatGroups WHERE groupID = '" + chatcode + "'", function(err, results) {
-                    if (typeof(results) != "undefined" && results.length > 0) {
+    validateSession(user, data.token, function(valid) {
+        if (valid && isValidInput(user) && isValidInput(chatcode) && isValidInput(data.token)){
+            db.serialize(function() {
+                db.all("SELECT code FROM ChatList WHERE code = '" + chatcode + "' AND (user1 = '"+user+"' OR user2 = '"+user+"')", function(err, results) {
+                    if (typeof(results) != "undefined" && results.length == 1) {
+                        db.run("CREATE TABLE IF NOT EXISTS " + chatcode + "_Messages (sender TEXT, message TEXT, user TEXT)");
                         db.run("INSERT INTO " + chatcode + "_Messages VALUES ('" + [name, message, user].join("','") + "')");
                         res.end("success");
                     } else {
-                        res.end("fail");
+                        db.all("SELECT groupID FROM ChatGroups WHERE groupID = '" + chatcode + "' AND user = '"+user+"'", function(err, results) {
+                            if (typeof(results) != "undefined" && results.length > 0) {
+                                db.run("INSERT INTO " + chatcode + "_Messages VALUES ('" + [name, message, user].join("','") + "')");
+                                res.end("success");
+                            } else {
+                                res.end("fail");
+                            }
+                        });
                     }
                 });
-            }
-        });
+            });
+        }
+        else {
+            res.end("fail")
+        }
     });
 });
+
+/*addAction("updateposition", "POST", function(req, res, get, post) {
+    var data = parseJSON(post);
+    var user = data.user;
+
+
+
+
+});*/
 
 addAction("loadgroupmessages", "POST", function(req, res, get, post) {
     var data = parseJSON(post);
@@ -658,38 +747,55 @@ addAction("getgroupchats", "POST", function(req, res, get, post) {
 });
 
 addAction("getteammates", "POST", function(req, res, get, post) {
+    //ONLY IF ON TEAM
     var data = parseJSON(post);
     var user = data.user; //verify user
     var teamCode = data.teamCode;
-    db.serialize(function() {
-        db.all("SELECT first, last, user FROM TeamsForUsers WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
-            if (typeof(results) != "undefined" && results.length > 0) {
-                var teammates = results;
-                for (var i = 0; i < teammates.length; i++) {
-                    teammates[i]["status"] = "offline";
-                    for (var j = 0; j < clients.length; j++) {
-                        if (clients[j].teamcode == teamCode && teammates[i].user == clients[j].user) {
-                            teammates[i].status = "online";
-                            break;
-                        }
+    //VALIDATE
+            db.serialize(function() {
+                db.all("SELECT user FROM TeamsForUsers WHERE user = '"+user+"' AND teamCode = '"+teamCode+"'", function(err, resultsConfirm){
+                    if (typeof(resultsConfirm) != "undefined" && resultsConfirm.length > 0) {
+                        db.all("SELECT first, last, user FROM TeamsForUsers WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
+                            if (typeof(results) != "undefined" && results.length > 0) {
+                                var teammates = results;
+                                for (var i = 0; i < teammates.length; i++) {
+                                    teammates[i]["status"] = "offline";
+                                    for (var j = 0; j < clients.length; j++) {
+                                        if (clients[j].teamcode == teamCode && teammates[i].user == clients[j].user) {
+                                            teammates[i].status = "online";
+                                            break;
+                                        }
+                                    }
+                                }
+                                res.end(JSON.stringify(teammates));
+                            } else {
+                                res.end(JSON.stringify([]));
+                            }
+                        });
                     }
-                }
-                res.end(JSON.stringify(teammates));
-            } else {
-                res.end(JSON.stringify([]));
-            }
-        });
-    });
+                    else {
+                        res.end(JSON.stringify([]));
+                    }
+                });
+            });
 });
 
 addAction("deletePost", "POST", function(req, res, get, post) {
+    //ADD ADMIN BRO
     var data = parseJSON(post);
     var postNum = data.postNum;
     var user = data.user;
     var teamCode = data.teamCode;
-    db.serialize(function() {
-        db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "' AND teamCode='" + teamCode + "'");
-        res.end("success");
+    validateSession(user, data.token, function(valid) {
+        if (valid && isValidInput(postNum) && isValidInput(user) && isValidInput(data.token) && isValidInput(teamCode)){
+            db.serialize(function() {
+                db.run("DELETE FROM Announcements WHERE postNum = '" + postNum + "' AND teamCode='" + teamCode + "' AND user = '"+user+"'");
+                res.end("success");
+            });
+        }
+        else {
+            res.end("fail")
+        }
     });
 });
 addAction("createUser", "POST", function(req, res, get, post) {
@@ -801,17 +907,24 @@ addAction("announce", "POST", function(req, res, get, post) {
     var text = data.text;
     var postNum = 1;
     var teamCode = data.teamCode;
-    db.serialize(function() {
-        db.all("SELECT * FROM Announcements WHERE teamCode='" + teamCode + "'", function(err, results) {
-            if (results.length == 0) {
-                postNum = 1
-            } else {
-                postNum = results[results.length - 1].postNum + 1;
-            }
-            db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER, user TEXT)");
-            db.run("INSERT INTO Announcements VALUES ('" + [nameDate, text, teamCode, postNum, user].join("','") + "')");
-            res.end("success");
-        });
+    validateSession(user, data.token, function(valid) {
+        if (valid && isValidInput(user) && isValidInput(teamCode)){
+            db.serialize(function() {
+                db.all("SELECT * FROM Announcements WHERE teamCode='" + teamCode + "'", function(err, results) {
+                    if (results.length == 0) {
+                        postNum = 1
+                    } else {
+                        postNum = results[results.length - 1].postNum + 1;
+                    }
+                    db.run("CREATE TABLE IF NOT EXISTS Announcements (nameDate TEXT, text TEXT, teamCode TEXT, postNum INTEGER, user TEXT)");
+                    db.run("INSERT INTO Announcements VALUES ('" + [nameDate, text, teamCode, postNum, user].join("','") + "')");
+                    res.end("success");
+                });
+            });
+        }
+        else {
+            res.end("fail")
+        }
     });
 });
 
@@ -885,7 +998,6 @@ addAction("searchEvents", "GET", function(req, res, get) {
 function validateSession(user, token, cb) {
     db.all("SELECT * FROM Sessions WHERE user = '" + user + "' AND token = '" + token + "'", function(err, results) {
         cb(typeof(results) != "undefined" && results.length > 0)
-
     });
 }
 
@@ -952,52 +1064,60 @@ io.listen(server).on("connection", function(socket) {
     });
     socket.on("newmessage", function(data) {
         if (typeof(data) != "undefined" && data != "") {
-            for (var i = 0; i < clients.length; i++) {
-                if (clients[i].chatcode == data.chatcode) {
-                    clients[i].socket.emit("message", data);
-                } else {
-                    for (var j = 0; j < data.recievers.length; j++) {
-                        if (clients[i].user == data.recievers[j] && clients[i].user != data.user) {
-                            clients[i].socket.emit("notification", data);
+            validateSession(data.user, data.token, function(valid) {
+                if (valid && isValidInput(data.user) && isValidInput(data.chatcode) && isValidInput(data.token)){
+                    for (var i = 0; i < clients.length; i++) {
+                        if (clients[i].chatcode == data.chatcode) {
+                            clients[i].socket.emit("message", data);
+                        } else {
+                            for (var j = 0; j < data.recievers.length; j++) {
+                                if (clients[i].user == data.recievers[j] && clients[i].user != data.user) {
+                                    clients[i].socket.emit("notification", data);
+                                }
+                            }
                         }
                     }
                 }
-            }
+            });
         }
     });
     //FIX ONLINE/OFFLINE INDICATOR WHEN TAB CLOSES AND ANOTHER IS OPEN
     socket.on("updateclient", function(data) {
         if (typeof(data) != "undefined" && data != "") {
-            var isConnected = false;
-            for (var i = 0; i < clients.length; i++) {
-                if (socket == clients[i].socket) {
-                    isConnected = true;
-                    clients[i].chatcode = data.chatcode;
-                    clients[i].user = data.user;
-                    clients[i].teamcode = data.teamcode;
-                    //clients[i].page = data.page; Use later
-                    break;
-                }
-            }
-            if (!isConnected) {
-                clients.push({
-                    "socket": socket,
-                    "chatcode": data.chatcode,
-                    "teamcode": data.teamcode,
-                    "page": "use later",
-                    "user": data.user
-                });
-                //console.log(JSON.stringify(clients[clients.length - 1]));
-                for (var i = 0; i < clients.length; i++) {
-                    if (clients[i].teamcode == data.teamcode) {
-                        clients[i].socket.emit("updateindicator", {
-                            "user": data.user,
-                            "status": "online"
-                        });
+            validateSession(data.user, data.token, function(valid) {
+                if (valid && isValidInput(data.user) && isValidInput(data.token)){
+                    var isConnected = false;
+                    for (var i = 0; i < clients.length; i++) {
+                        if (socket == clients[i].socket) {
+                            isConnected = true;
+                            clients[i].chatcode = data.chatcode;
+                            clients[i].user = data.user;
+                            clients[i].teamcode = data.teamcode;
+                            //clients[i].page = data.page; Use later
+                            break;
+                        }
                     }
+                    if (!isConnected) {
+                        clients.push({
+                            "socket": socket,
+                            "chatcode": data.chatcode,
+                            "teamcode": data.teamcode,
+                            "page": "use later",
+                            "user": data.user
+                        });
+                        //console.log(JSON.stringify(clients[clients.length - 1]));
+                        for (var i = 0; i < clients.length; i++) {
+                            if (clients[i].teamcode == data.teamcode) {
+                                clients[i].socket.emit("updateindicator", {
+                                    "user": data.user,
+                                    "status": "online"
+                                });
+                            }
+                        }
+                    }
+                    socket.emit("updated", {});
                 }
-            }
-            socket.emit("updated", {});
+            });
         }
     });
 });

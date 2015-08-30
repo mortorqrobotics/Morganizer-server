@@ -1,9 +1,9 @@
 0 info it worked if it ends with ok
-1 verbose cli [ 'node', '/usr/local/bin/npm', 'install', 'sqlite3', '-g' ]
+1 verbose cli [ 'node', '/usr/local/bin/npm', 'install', '-g', 'openssl' ]
 2 info using npm@1.4.28
 3 info using node@v0.10.35
-4 verbose cache add [ 'sqlite3', null ]
-5 verbose cache add name=undefined spec="sqlite3" args=["sqlite3",null]
+4 verbose cache add [ 'openssl', null ]
+5 verbose cache add name=undefined spec="openssl" args=["openssl",null]
 6 verbose parsed url { protocol: null,
 6 verbose parsed url   slashes: null,
 6 verbose parsed url   auth: null,
@@ -13,207 +13,127 @@
 6 verbose parsed url   hash: null,
 6 verbose parsed url   search: null,
 6 verbose parsed url   query: null,
-6 verbose parsed url   pathname: 'sqlite3',
-6 verbose parsed url   path: 'sqlite3',
-6 verbose parsed url   href: 'sqlite3' }
-7 silly lockFile b54e393c-sqlite3 sqlite3
-8 verbose lock sqlite3 /Users/arvinzadeh/.npm/b54e393c-sqlite3.lock
-9 silly lockFile b54e393c-sqlite3 sqlite3
-10 silly lockFile b54e393c-sqlite3 sqlite3
-11 verbose addNamed [ 'sqlite3', '' ]
+6 verbose parsed url   pathname: 'openssl',
+6 verbose parsed url   path: 'openssl',
+6 verbose parsed url   href: 'openssl' }
+7 silly lockFile c898fa1e-openssl openssl
+8 verbose lock openssl /Users/arvinzadeh/.npm/c898fa1e-openssl.lock
+9 silly lockFile c898fa1e-openssl openssl
+10 silly lockFile c898fa1e-openssl openssl
+11 verbose addNamed [ 'openssl', '' ]
 12 verbose addNamed [ null, '*' ]
-13 silly lockFile b9879749-sqlite3 sqlite3@
-14 verbose lock sqlite3@ /Users/arvinzadeh/.npm/b9879749-sqlite3.lock
-15 silly addNameRange { name: 'sqlite3', range: '*', hasData: false }
-16 verbose request where is /sqlite3
+13 silly lockFile 90b9c2ce-openssl openssl@
+14 verbose lock openssl@ /Users/arvinzadeh/.npm/90b9c2ce-openssl.lock
+15 silly addNameRange { name: 'openssl', range: '*', hasData: false }
+16 verbose request where is /openssl
 17 verbose request registry https://registry.npmjs.org/
-18 verbose request id fbbf36b96b356b5c
-19 verbose url raw /sqlite3
-20 verbose url resolving [ 'https://registry.npmjs.org/', './sqlite3' ]
-21 verbose url resolved https://registry.npmjs.org/sqlite3
-22 verbose request where is https://registry.npmjs.org/sqlite3
-23 info trying registry request attempt 1 at 21:21:32
-24 http GET https://registry.npmjs.org/sqlite3
-25 http 200 https://registry.npmjs.org/sqlite3
+18 verbose request id b9752a863f03a7ad
+19 verbose url raw /openssl
+20 verbose url resolving [ 'https://registry.npmjs.org/', './openssl' ]
+21 verbose url resolved https://registry.npmjs.org/openssl
+22 verbose request where is https://registry.npmjs.org/openssl
+23 info trying registry request attempt 1 at 21:14:11
+24 http GET https://registry.npmjs.org/openssl
+25 http 200 https://registry.npmjs.org/openssl
 26 silly registry.get cb [ 200,
 26 silly registry.get   { server: 'CouchDB/1.5.0 (Erlang OTP/R16B03)',
-26 silly registry.get     etag: '"56GFXK1ZH19FKDTYUL4R08N54"',
+26 silly registry.get     etag: '"CWQY587ZO78L1ABPXFZSQ6SR8"',
 26 silly registry.get     'content-type': 'application/json',
 26 silly registry.get     'cache-control': 'max-age=60',
-26 silly registry.get     'content-length': '116684',
+26 silly registry.get     'content-length': '1127',
 26 silly registry.get     'accept-ranges': 'bytes',
-26 silly registry.get     date: 'Sat, 15 Aug 2015 04:21:32 GMT',
+26 silly registry.get     date: 'Sat, 29 Aug 2015 04:14:11 GMT',
 26 silly registry.get     via: '1.1 varnish',
 26 silly registry.get     age: '0',
 26 silly registry.get     connection: 'keep-alive',
-26 silly registry.get     'x-served-by': 'cache-sjc3128-SJC',
-26 silly registry.get     'x-cache': 'HIT',
-26 silly registry.get     'x-cache-hits': '1',
-26 silly registry.get     'x-timer': 'S1439612492.464622,VS0,VE345',
+26 silly registry.get     'x-served-by': 'cache-sjc3121-SJC',
+26 silly registry.get     'x-cache': 'MISS',
+26 silly registry.get     'x-cache-hits': '0',
+26 silly registry.get     'x-timer': 'S1440821651.063963,VS0,VE53',
 26 silly registry.get     vary: 'Accept' } ]
-27 silly addNameRange number 2 { name: 'sqlite3', range: '*', hasData: true }
-28 silly addNameRange versions [ 'sqlite3',
-28 silly addNameRange   [ '2.0.0',
-28 silly addNameRange     '2.0.1',
-28 silly addNameRange     '2.0.2',
-28 silly addNameRange     '2.0.3',
-28 silly addNameRange     '2.0.4',
-28 silly addNameRange     '2.0.5',
-28 silly addNameRange     '2.0.6',
-28 silly addNameRange     '2.0.7',
-28 silly addNameRange     '2.0.8',
-28 silly addNameRange     '2.0.9',
-28 silly addNameRange     '2.0.10',
-28 silly addNameRange     '2.0.11',
-28 silly addNameRange     '2.0.12',
-28 silly addNameRange     '2.0.13',
-28 silly addNameRange     '2.0.14',
-28 silly addNameRange     '2.0.15',
-28 silly addNameRange     '2.0.16',
-28 silly addNameRange     '2.0.17',
-28 silly addNameRange     '2.0.18',
-28 silly addNameRange     '2.1.0',
-28 silly addNameRange     '2.1.1',
-28 silly addNameRange     '2.1.2',
-28 silly addNameRange     '2.1.3',
-28 silly addNameRange     '2.1.4',
-28 silly addNameRange     '2.1.5',
-28 silly addNameRange     '2.1.7',
-28 silly addNameRange     '2.1.8',
-28 silly addNameRange     '2.1.9',
-28 silly addNameRange     '2.1.10',
-28 silly addNameRange     '2.1.11',
-28 silly addNameRange     '2.1.12',
-28 silly addNameRange     '2.1.13',
-28 silly addNameRange     '2.1.14',
-28 silly addNameRange     '2.1.15',
-28 silly addNameRange     '2.1.16',
-28 silly addNameRange     '2.1.17',
-28 silly addNameRange     '2.1.18',
-28 silly addNameRange     '2.1.19',
-28 silly addNameRange     '2.2.0',
-28 silly addNameRange     '2.2.1',
-28 silly addNameRange     '2.2.2',
-28 silly addNameRange     '2.2.3',
-28 silly addNameRange     '2.2.4',
-28 silly addNameRange     '2.2.6',
-28 silly addNameRange     '2.2.7',
-28 silly addNameRange     '3.0.0',
-28 silly addNameRange     '3.0.1',
-28 silly addNameRange     '3.0.2',
-28 silly addNameRange     '3.0.4',
-28 silly addNameRange     '3.0.5',
-28 silly addNameRange     '3.0.6',
-28 silly addNameRange     '3.0.7',
-28 silly addNameRange     '3.0.8',
-28 silly addNameRange     '3.0.9',
-28 silly addNameRange     '3.0.10' ] ]
-29 verbose addNamed [ 'sqlite3', '3.0.10' ]
-30 verbose addNamed [ '3.0.10', '3.0.10' ]
-31 silly lockFile a488d39e-sqlite3-3-0-10 sqlite3@3.0.10
-32 verbose lock sqlite3@3.0.10 /Users/arvinzadeh/.npm/a488d39e-sqlite3-3-0-10.lock
-33 silly lockFile ce766fe2-s-org-sqlite3-sqlite3-3-0-10-tgz https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz
-34 verbose lock https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz /Users/arvinzadeh/.npm/ce766fe2-s-org-sqlite3-sqlite3-3-0-10-tgz.lock
-35 verbose addRemoteTarball [ 'https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz',
-35 verbose addRemoteTarball   'e442336dcab445ad729c07fcc5efd91fb2cd0d78' ]
-36 info retry fetch attempt 1 at 21:21:32
-37 verbose fetch to= /var/folders/0q/kr7731kn78x5z66w52__txm80000gn/T/npm-35707-lW5RH65c/registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz
-38 http GET https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz
-39 http 200 https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz
-40 silly lockFile ce766fe2-s-org-sqlite3-sqlite3-3-0-10-tgz https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz
-41 silly lockFile ce766fe2-s-org-sqlite3-sqlite3-3-0-10-tgz https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz
-42 silly lockFile a488d39e-sqlite3-3-0-10 sqlite3@3.0.10
-43 silly lockFile a488d39e-sqlite3-3-0-10 sqlite3@3.0.10
-44 silly lockFile b9879749-sqlite3 sqlite3@
-45 silly lockFile b9879749-sqlite3 sqlite3@
-46 silly resolved [ { name: 'sqlite3',
-46 silly resolved     description: 'Asynchronous, non-blocking SQLite3 bindings',
-46 silly resolved     version: '3.0.10',
-46 silly resolved     homepage: 'http://github.com/mapbox/node-sqlite3',
-46 silly resolved     author: { name: 'MapBox', url: 'https://mapbox.com/' },
-46 silly resolved     binary:
-46 silly resolved      { module_name: 'node_sqlite3',
-46 silly resolved        module_path: './lib/binding/{node_abi}-{platform}-{arch}',
-46 silly resolved        host: 'https://mapbox-node-binary.s3.amazonaws.com',
-46 silly resolved        remote_path: './{name}/v{version}/{toolset}/',
-46 silly resolved        package_name: '{node_abi}-{platform}-{arch}.tar.gz' },
-46 silly resolved     contributors:
-46 silly resolved      [ [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object],
-46 silly resolved        [Object] ],
-46 silly resolved     repository: { type: 'git', url: 'git://github.com/mapbox/node-sqlite3.git' },
-46 silly resolved     dependencies: { nan: '~1.8.4', 'node-pre-gyp': '~0.6.9' },
-46 silly resolved     devDependencies: { mocha: '1.x', 'aws-sdk': '~2.1.26' },
-46 silly resolved     scripts:
-46 silly resolved      { prepublish: 'npm ls',
-46 silly resolved        install: 'node-pre-gyp install --fallback-to-build',
-46 silly resolved        pretest: 'node test/support/createdb.js',
-46 silly resolved        test: 'mocha -R spec --timeout 480000' },
-46 silly resolved     licenses: [ [Object] ],
-46 silly resolved     keywords: [ 'sql', 'sqlite', 'sqlite3', 'database' ],
-46 silly resolved     main: './lib/sqlite3',
-46 silly resolved     gitHead: '93c962ab51e219d0e938866b89635d2909dc8118',
-46 silly resolved     bugs: { url: 'https://github.com/mapbox/node-sqlite3/issues' },
-46 silly resolved     bundleDependencies: [ 'node-pre-gyp' ],
-46 silly resolved     _id: 'sqlite3@3.0.10',
-46 silly resolved     _shasum: 'e442336dcab445ad729c07fcc5efd91fb2cd0d78',
-46 silly resolved     _from: 'sqlite3@',
-46 silly resolved     _npmVersion: '1.4.28',
-46 silly resolved     _npmUser: { name: 'springmeyer', email: 'dane@mapbox.com' },
-46 silly resolved     maintainers: [ [Object], [Object], [Object], [Object] ],
-46 silly resolved     dist:
-46 silly resolved      { shasum: 'e442336dcab445ad729c07fcc5efd91fb2cd0d78',
-46 silly resolved        tarball: 'http://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz' },
-46 silly resolved     directories: {},
-46 silly resolved     _resolved: 'https://registry.npmjs.org/sqlite3/-/sqlite3-3.0.10.tgz' } ]
-47 info install sqlite3@3.0.10 into /usr/local/lib
-48 info installOne sqlite3@3.0.10
-49 verbose lib/node_modules/sqlite3 unbuild
-50 verbose tar unpack /Users/arvinzadeh/.npm/sqlite3/3.0.10/package.tgz
-51 silly lockFile afa851fb-r-local-lib-node-modules-sqlite3 tar:///usr/local/lib/node_modules/sqlite3
-52 verbose lock tar:///usr/local/lib/node_modules/sqlite3 /Users/arvinzadeh/.npm/afa851fb-r-local-lib-node-modules-sqlite3.lock
-53 silly lockFile a16792ca-h-npm-sqlite3-3-0-10-package-tgz tar:///Users/arvinzadeh/.npm/sqlite3/3.0.10/package.tgz
-54 verbose lock tar:///Users/arvinzadeh/.npm/sqlite3/3.0.10/package.tgz /Users/arvinzadeh/.npm/a16792ca-h-npm-sqlite3-3-0-10-package-tgz.lock
-55 silly gunzTarPerm modes [ '755', '644' ]
-56 error Error: EACCES, mkdir '/usr/local/lib/node_modules/sqlite3'
-56 error  { [Error: EACCES, mkdir '/usr/local/lib/node_modules/sqlite3']
-56 error   errno: 3,
-56 error   code: 'EACCES',
-56 error   path: '/usr/local/lib/node_modules/sqlite3',
-56 error   fstream_type: 'Directory',
-56 error   fstream_path: '/usr/local/lib/node_modules/sqlite3',
-56 error   fstream_class: 'DirWriter',
-56 error   fstream_stack:
-56 error    [ '/usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:36:23',
-56 error      '/usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:46:53',
-56 error      'Object.oncomplete (fs.js:108:15)' ] }
-57 error Please try running this command again as root/Administrator.
-58 error System Darwin 14.0.0
-59 error command "node" "/usr/local/bin/npm" "install" "sqlite3" "-g"
-60 error cwd /Users/arvinzadeh/Desktop/mor/Morganizer-server
-61 error node -v v0.10.35
-62 error npm -v 1.4.28
-63 error path /usr/local/lib/node_modules/sqlite3
-64 error fstream_path /usr/local/lib/node_modules/sqlite3
-65 error fstream_type Directory
-66 error fstream_class DirWriter
-67 error code EACCES
-68 error errno 3
-69 error stack Error: EACCES, mkdir '/usr/local/lib/node_modules/sqlite3'
-70 error fstream_stack /usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:36:23
-70 error fstream_stack /usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:46:53
-70 error fstream_stack Object.oncomplete (fs.js:108:15)
-71 verbose exit [ 3, true ]
+27 silly addNameRange number 2 { name: 'openssl', range: '*', hasData: true }
+28 silly addNameRange versions [ 'openssl', [ '0.1.0' ] ]
+29 verbose addNamed [ 'openssl', '0.1.0' ]
+30 verbose addNamed [ '0.1.0', '0.1.0' ]
+31 silly lockFile 12fafbc2-openssl-0-1-0 openssl@0.1.0
+32 verbose lock openssl@0.1.0 /Users/arvinzadeh/.npm/12fafbc2-openssl-0-1-0.lock
+33 silly lockFile ed889982-js-org-openssl-openssl-0-1-0-tgz https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+34 verbose lock https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz /Users/arvinzadeh/.npm/ed889982-js-org-openssl-openssl-0-1-0-tgz.lock
+35 verbose addRemoteTarball [ 'https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz',
+35 verbose addRemoteTarball   'f8ebb6a481f50f6a25fd18c2f3f2b75646b0593e' ]
+36 info retry fetch attempt 1 at 21:14:11
+37 verbose fetch to= /var/folders/0q/kr7731kn78x5z66w52__txm80000gn/T/npm-15505-oWN75DV2/registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+38 http GET https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+39 http 503 https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+40 error fetch failed https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+41 info retry will retry, error on last attempt: Error: 503 Service Unavailable
+42 info retry fetch attempt 2 at 21:15:21
+43 verbose fetch to= /var/folders/0q/kr7731kn78x5z66w52__txm80000gn/T/npm-15505-oWN75DV2/registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+44 http GET https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+45 http 200 https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+46 silly lockFile ed889982-js-org-openssl-openssl-0-1-0-tgz https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+47 silly lockFile ed889982-js-org-openssl-openssl-0-1-0-tgz https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz
+48 silly lockFile 12fafbc2-openssl-0-1-0 openssl@0.1.0
+49 silly lockFile 12fafbc2-openssl-0-1-0 openssl@0.1.0
+50 silly lockFile 90b9c2ce-openssl openssl@
+51 silly lockFile 90b9c2ce-openssl openssl@
+52 silly resolved [ { name: 'openssl',
+52 silly resolved     version: '0.1.0',
+52 silly resolved     description: 'openssl wrapper',
+52 silly resolved     main: 'lib/openssl.js',
+52 silly resolved     scripts: { test: 'echo "Error: no test specified" && exit 1' },
+52 silly resolved     repository: '',
+52 silly resolved     keywords: [ 'openssl', 'ssl', 'tls', 'crypto' ],
+52 silly resolved     author: { name: 'Naomi Kyoto', email: 'nakyoto@gmail.com' },
+52 silly resolved     license: 'BSD',
+52 silly resolved     dependencies: {},
+52 silly resolved     _id: 'openssl@0.1.0',
+52 silly resolved     readme: 'ERROR: No README.md file found!',
+52 silly resolved     dist:
+52 silly resolved      { shasum: 'f8ebb6a481f50f6a25fd18c2f3f2b75646b0593e',
+52 silly resolved        tarball: 'http://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz' },
+52 silly resolved     _npmVersion: '1.1.66',
+52 silly resolved     _npmUser: { name: 'naomik', email: 'nakyoto@gmail.com' },
+52 silly resolved     maintainers: [ [Object] ],
+52 silly resolved     directories: {},
+52 silly resolved     _shasum: 'f8ebb6a481f50f6a25fd18c2f3f2b75646b0593e',
+52 silly resolved     _from: 'openssl@',
+52 silly resolved     _resolved: 'https://registry.npmjs.org/openssl/-/openssl-0.1.0.tgz' } ]
+53 info install openssl@0.1.0 into /usr/local/lib
+54 info installOne openssl@0.1.0
+55 verbose lib/node_modules/openssl unbuild
+56 verbose tar unpack /Users/arvinzadeh/.npm/openssl/0.1.0/package.tgz
+57 silly lockFile 1418d440-r-local-lib-node-modules-openssl tar:///usr/local/lib/node_modules/openssl
+58 verbose lock tar:///usr/local/lib/node_modules/openssl /Users/arvinzadeh/.npm/1418d440-r-local-lib-node-modules-openssl.lock
+59 silly lockFile 2d6f0ecf-eh-npm-openssl-0-1-0-package-tgz tar:///Users/arvinzadeh/.npm/openssl/0.1.0/package.tgz
+60 verbose lock tar:///Users/arvinzadeh/.npm/openssl/0.1.0/package.tgz /Users/arvinzadeh/.npm/2d6f0ecf-eh-npm-openssl-0-1-0-package-tgz.lock
+61 silly gunzTarPerm modes [ '755', '644' ]
+62 error Error: EACCES, mkdir '/usr/local/lib/node_modules/openssl'
+62 error  { [Error: EACCES, mkdir '/usr/local/lib/node_modules/openssl']
+62 error   errno: 3,
+62 error   code: 'EACCES',
+62 error   path: '/usr/local/lib/node_modules/openssl',
+62 error   fstream_type: 'Directory',
+62 error   fstream_path: '/usr/local/lib/node_modules/openssl',
+62 error   fstream_class: 'DirWriter',
+62 error   fstream_stack:
+62 error    [ '/usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:36:23',
+62 error      '/usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:46:53',
+62 error      'Object.oncomplete (fs.js:108:15)' ] }
+63 error Please try running this command again as root/Administrator.
+64 error System Darwin 14.0.0
+65 error command "node" "/usr/local/bin/npm" "install" "-g" "openssl"
+66 error cwd /Users/arvinzadeh/Desktop/mor/Morganizer-server
+67 error node -v v0.10.35
+68 error npm -v 1.4.28
+69 error path /usr/local/lib/node_modules/openssl
+70 error fstream_path /usr/local/lib/node_modules/openssl
+71 error fstream_type Directory
+72 error fstream_class DirWriter
+73 error code EACCES
+74 error errno 3
+75 error stack Error: EACCES, mkdir '/usr/local/lib/node_modules/openssl'
+76 error fstream_stack /usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:36:23
+76 error fstream_stack /usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:46:53
+76 error fstream_stack Object.oncomplete (fs.js:108:15)
+77 verbose exit [ 3, true ]
