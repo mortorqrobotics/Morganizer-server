@@ -7,6 +7,7 @@ var io = require("socket.io");
 var sqlite = require("sqlite3");
 var db = new sqlite.Database("data.db");
 var clients = [];
+
 //http.globalAgent.maxSockets = Inf;
 function parseJSON(str) {
     try {
@@ -327,6 +328,7 @@ addAction("updatetoken", "POST", function(req, res, get, post) {
     var data = parseJSON(post);
     var user = data.user;
     var token = data.token;
+    var teamCode = data.teamCode;
     db.serialize(function(){
         db.all("SELECT * FROM Sessions WHERE user = '" + user + "' AND token = '" + token + "'", function(err, results) {
             if(typeof(results) != "undefined" && results.length > 0){
@@ -335,7 +337,15 @@ addAction("updatetoken", "POST", function(req, res, get, post) {
                 setTimeout(function(){
                     db.run("DELETE FROM Sessions WHERE user = '"+user+"' AND token = '"+token+"'");
                 }, 3000);
-                res.end(newToken);
+                db.all("SELECT position FROM TeamsForUsers WHERE teamCode = '" + teamCode + "' AND user = '" + user + "'", function(err, resultsPosition) {
+                    if (typeof(resultsPosition) != "undefined" && resultsPosition.length > 0){
+                        var position = resultsPosition[0].position;
+                        res.end(JSON.stringify({"token":newToken, "position":position}));
+                    }
+                    else {
+                        res.end("fail");
+                    }
+                });
             }
             else {
                 res.end("fail");
@@ -664,14 +674,67 @@ addAction("addmessage", "POST", function(req, res, get, post) {
     });
 });
 
-/*addAction("updateposition", "POST", function(req, res, get, post) {
+// addAction("getposition", "POST", function(req, res, get, post) {
+//     var data = parseJSON(post);
+//     var user = data.user;
+//
+// });
+
+addAction("updateposition", "POST", function(req, res, get, post) {
+    //CHECK FOR IF ALREADY IN TEAM
+    //FIX IF STMT'S HERE
     var data = parseJSON(post);
     var user = data.user;
-
-
-
-
-});*/
+    var userToChange = data.userToChange;
+    var userToChangePosition =  data.userToChangePosition;
+    var teamCode = data.teamCode;
+    validateSession(user, data.token, function(valid) {
+        if (valid && isValidInput(user) && isValidInput(userToChange) && isValidInput(data.token) && isValidInput(userToChangePosition) && isValidInput(teamCode)){
+            db.serialize(function() {
+                db.all("SELECT position FROM TeamsForUsers WHERE teamCode = '" + teamCode + "' AND user = '" + userToChange + "'", function(err, resultsCurrent) {
+                    if (typeof(resultsCurrent) != "undefined" && resultsCurrent.length == 1) {
+                        var currentPositionOfUserToChange = resultsCurrent[0].position;
+                        db.all("SELECT position FROM TeamsForUsers WHERE teamCode = '" + teamCode + "' AND user = '" + user + "'", function(err, resultsPosition) {
+                            if (typeof(resultsPosition) != "undefined" && resultsPosition.length == 1) {
+                                var positionOfUser = resultsPosition[0].position;
+                                if (userToChangePosition == "Admin"){
+                                    if (positionOfUser == "Admin"){
+                                        db.run("UPDATE TeamsForUsers SET position = 'Admin' WHERE user = '"+userToChange+"' AND teamCode = '"+teamCode+"'");
+                                        res.end("success");
+                                    }
+                                    else {
+                                        res.end("fail");
+                                    }
+                                }
+                                else if (userToChangePosition == "Leader" || userToChangePosition == "Member"){//Doing this for future expansion
+                                    if (positionOfUser == "Admin" || (positionOfUser == "Leader" && currentPositionOfUserToChange != "Admin")){
+                                        db.run("UPDATE TeamsForUsers SET position = '"+userToChangePosition+"' WHERE user = '"+userToChange+"' AND teamCode = '"+teamCode+"'");
+                                        res.end("success");
+                                    }
+                                    else {
+                                        res.end("fail");
+                                    }
+                                }
+                                else {
+                                    res.end("fail");
+                                }
+                            }
+                            else {
+                                res.end("fail")
+                            }
+                        });
+                    }
+                    else {
+                        res.end("fail")
+                    }
+                });
+            });
+        }
+        else {
+            res.end("fail")
+        }
+    });
+});
 
 addAction("loadgroupmessages", "POST", function(req, res, get, post) {
     var data = parseJSON(post);
@@ -755,7 +818,7 @@ addAction("getteammates", "POST", function(req, res, get, post) {
             db.serialize(function() {
                 db.all("SELECT user FROM TeamsForUsers WHERE user = '"+user+"' AND teamCode = '"+teamCode+"'", function(err, resultsConfirm){
                     if (typeof(resultsConfirm) != "undefined" && resultsConfirm.length > 0) {
-                        db.all("SELECT first, last, user FROM TeamsForUsers WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
+                        db.all("SELECT first, last, user, position FROM TeamsForUsers WHERE teamCode = '" + teamCode + "' AND user <> '" + user + "'", function(err, results) {
                             if (typeof(results) != "undefined" && results.length > 0) {
                                 var teammates = results;
                                 for (var i = 0; i < teammates.length; i++) {
