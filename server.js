@@ -489,19 +489,24 @@ addAction("makescope", "POST", function(req, res, get, post){
     var members = data.members;
     db.serialize(function(){
         //Make so you can't have same name
-        db.run("CREATE TABLE IF NOT EXISTS ScopesForTeam (teamCode TEXT, scopeName TEXT, status TEXT, admin TEXT)");
-        db.run("CREATE TABLE IF NOT EXISTS UsersInScope (teamCode TEXT, scopeName TEXT, user TEXT)")
-        db.run("INSERT INTO ScopesForTeam VALUES ('"+[teamCode, scopeName, status, user].join("','")+"')");
-        db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, user].join("','")+"')");
-        //for (var i = 0; i < members.length; i++){
-            //db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, members[i]].join("','")+"')");
-        //}
-        db.run("CREATE TABLE IF NOT EXISTS PendingScopeInvites (inviter TEXT, teamCode TEXT, scopeName TEXT, newUser TEXT)");
-        for (var i = 0; i < members.length; i++){
-            db.run("INSERT INTO PendingScopeInvites VALUES ('"+[user, teamCode, scopeName, members[i]].join("','")+"')");
+        if (scopeName.trim() != ""){
+            db.run("CREATE TABLE IF NOT EXISTS ScopesForTeam (teamCode TEXT, scopeName TEXT, status TEXT, admin TEXT)");
+            db.run("CREATE TABLE IF NOT EXISTS UsersInScope (teamCode TEXT, scopeName TEXT, user TEXT)")
+            db.run("INSERT INTO ScopesForTeam VALUES ('"+[teamCode, scopeName, status, user].join("','")+"')");
+            db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, user].join("','")+"')");
+            //for (var i = 0; i < members.length; i++){
+                //db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, members[i]].join("','")+"')");
+            //}
+            db.run("CREATE TABLE IF NOT EXISTS PendingScopeInvites (inviter TEXT, teamCode TEXT, scopeName TEXT, newUser TEXT)");
+            for (var i = 0; i < members.length; i++){
+                db.run("INSERT INTO PendingScopeInvites VALUES ('"+[user, teamCode, scopeName, members[i]].join("','")+"')");
+            }
+            res.end("success")
         }
-        res.end("success")
-    })
+        else {
+            res.end("fail")
+        }
+    });
 });
 
 addAction("getyourscopes", "POST", function(req, res, get, post){
@@ -577,11 +582,30 @@ addAction("respondtoinvite", "POST", function(req, res, get, post){
     var teamCode = data.teamCode;
     var response = data.response;
     db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS ScopesInGroups (scope TEXT, teamCode TEXT, type TEXT, code TEXT)");
         db.run("DELETE FROM PendingScopeInvites WHERE newUser = '"+user+"' AND scopeName = '"+scopeName+"' AND teamCode = '"+teamCode+"'");
         if (response == "accept"){
             db.run("INSERT INTO UsersInScope VALUES ('"+[teamCode, scopeName, user].join("','")+"')");
+            db.all("SELECT * FROM ScopesInGroups WHERE scope ='"+scopeName+"' AND teamCode = '"+teamCode+"'", function(err, results){
+                if (typeof(results) != "undefined"&&results.length > 0){
+                    for (var i = 0; i < results.length; i++){
+                        if (results[i].type == "groupChat"){
+                            db.run("INSERT INTO ChatGroups VALUES ('" + [results[i].name, results[i].code, user].join("','") + "')");
+                        }
+                        else {
+                            //TODO: Everything else
+                        }
+                    }
+                    res.end("success");
+                }
+                else {
+                    res.end("success");
+                }
+            });
         }
-        res.end("success")
+        else {
+            res.end("success");
+        }
     });
 });
 
@@ -779,12 +803,19 @@ addAction("creategroupchat", "POST", function(req, res, get, post) {
     var chatName = data.chatName; //check if .trim() == ""
     //var teamCode = data.teamCode; //Use MAYbe
     var chatID = "B" + randomStr();
+    var scopes = data.scopes;
+    var teamCode = data.teamCode;
     db.serialize(function() {
         db.run("CREATE TABLE IF NOT EXISTS ChatGroups (groupName TEXT, groupID TEXT, user TEXT)");
-        db.run("CREATE TABLE IF NOT EXISTS " + chatID + "_Messages (sender TEXT, message TEXT, user TEXT)")
+        db.run("CREATE TABLE IF NOT EXISTS " + chatID + "_Messages (sender TEXT, message TEXT, user TEXT)");
+        db.run("CREATE TABLE IF NOT EXISTS ScopesInGroups (scope TEXT, teamCode TEXT, type TEXT, code TEXT, name TEXT)");
         for (var i = 0; i < users.length; i++) {
             var user = users[i];
             db.run("INSERT INTO ChatGroups VALUES ('" + [chatName, chatID, user].join("','") + "')")
+        }
+        for (var i = 0; i < scopes.length; i++){
+            var scope = scopes[i];
+            db.run("INSERT INTO ScopesInGroups VALUES ('"+[scope, teamCode, "groupChat", chatID, chatName].join("','")+"')");
         }
         res.end(JSON.stringify({
             "chatName": chatName,
