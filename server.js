@@ -198,12 +198,19 @@ addAction("newfolder", "POST", function(req, res, get, post) {
     var people = data.people;
     var folderCode = "F" + randomStr();
     var folderName = data.folderName;
+    var scopes = data.scopes;
+    var teamCode = data.teamCode;
     people.push(user);
     db.serialize(function() {
+        db.run("CREATE TABLE IF NOT EXISTS ScopesInGroups (scope TEXT, teamCode TEXT, type TEXT, code TEXT)");
         db.run("CREATE TABLE IF NOT EXISTS DriveFolders (user TEXT, folderName TEXT, folderCode TEXT)");
         for (var i = 0; i < people.length; i++){
             var person = people[i];
-            db.run("INSERT INTO DriveFolders VALUES ('"+[person, folderName, folderCode].join("','")+"')")
+            db.run("INSERT INTO DriveFolders VALUES ('"+[person, folderName, folderCode].join("','")+"')");
+        }
+        for (var i = 0; i < scopes.length; i++){
+            var scope = scopes[i];
+            db.run("INSERT INTO ScopesInGroups VALUES ('"+[scope, teamCode, "driveFolder", folderCode, folderName].join("','")+"')");
         }
         res.end(folderCode);
     });
@@ -469,11 +476,18 @@ addAction("addevent", "POST", function(req, res, get, post){
     var day = data.day;
     var month = data.month;
     var year = data.year;
+    var teamCode = data.teamCode;
     var eventID = "E"+randomStr();
+    var scopes = data.scopes;
     db.serialize(function(){
+        db.run("CREATE TABLE IF NOT EXISTS ScopesInGroups (scope TEXT, teamCode TEXT, type TEXT, code TEXT, name TEXT)");
         db.run("CREATE TABLE IF NOT EXISTS AllEvents (user TEXT, eventName TEXT, eventDesc TEXT, timeStamp TEXT, day TEXT, month TEXT, year TEXT, eventID TEXT, isPresent TEXT)");
         for (var i = 0; i < people.length; i++){
             db.run("INSERT INTO AllEvents VALUES ('"+[people[i], eventName, eventDesc, timeStamp, day, month, year, eventID, "false"].join("','")+"')")
+        }
+        for (var i = 0; i < scopes.length; i++){
+            var scope = scopes[i];
+            db.run("INSERT INTO ScopesInGroups VALUES ('"+[scope, teamCode, "calendarEvent", eventID, eventName].join("','")+"')");
         }
         res.end(eventID);
     });
@@ -592,8 +606,18 @@ addAction("respondtoinvite", "POST", function(req, res, get, post){
                         if (results[i].type == "groupChat"){
                             db.run("INSERT INTO ChatGroups VALUES ('" + [results[i].name, results[i].code, user].join("','") + "')");
                         }
+                        else if (results[i].type == "driveFolder"){
+                            db.run("INSERT INTO DriveFolders VALUES ('"+[user, results[i].name, results[i].code].join("','")+"')");
+                        }
+                        else if (results[i].type == "calendarEvent") {
+                            db.get("SELECT * FROM AllEvents WHERE eventID = '"+results[i].code+"'", function(err, eventInfo){
+                                if (typeof(eventInfo) != "undefined"){
+                                    db.run("INSERT INTO AllEvents VALUES ('"+[user, eventInfo.eventName, eventInfo.eventDesc, eventInfo.timeStamp, eventInfo.day, eventInfo.month, eventInfo.year, eventInfo.eventID, "false"].join("','")+"')")
+                                }
+                            })
+                        }
                         else {
-                            //TODO: Everything else
+                            //More?
                         }
                     }
                     res.end("success");
